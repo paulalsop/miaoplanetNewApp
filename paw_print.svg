@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 猫爪印图案 -->
+  <g transform="translate(25, 10)">
+    <!-- 上方左脚趾垫 -->
+    <ellipse cx="50" cy="50" rx="25" ry="35" fill="black" transform="rotate(-10 50 50)"/>
+    
+    <!-- 上方右脚趾垫 -->
+    <ellipse cx="120" cy="50" rx="25" ry="35" fill="black" transform="rotate(10 120 50)"/>
+    
+    <!-- 左侧脚趾垫 -->
+    <ellipse cx="20" cy="110" rx="25" ry="35" fill="black" transform="rotate(30 20 110)"/>
+    
+    <!-- 右侧脚趾垫 -->
+    <ellipse cx="150" cy="110" rx="25" ry="35" fill="black" transform="rotate(-30 150 110)"/>
+    
+    <!-- 中间大掌垫 -->
+    <path d="M50,110 C50,85 100,85 100,110 C110,140 90,170 80,170 C70,170 40,140 50,110 Z" fill="black"/>
+  </g>
+</svg> 

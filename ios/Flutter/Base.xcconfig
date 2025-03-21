@@ -1,0 +1,2 @@
+// Base configurations for Flutter iOS projects
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = $(inherited) i386 

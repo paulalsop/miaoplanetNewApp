@@ -1,0 +1,14 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "Generated.xcconfig"
+
+#include "Base.xcconfig"
+
+// 添加Bundle ID设置
+PRODUCT_BUNDLE_IDENTIFIER=app.xingqiu.miao
+
+// 支持Apple Silicon模拟器
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = i386
+VALID_ARCHS = arm64 arm64e x86_64
+ONLY_ACTIVE_ARCH=YES
+ENABLE_BITCODE=NO
+ARCHS[sdk=iphonesimulator*]=arm64 x86_64
