@@ -87,7 +87,7 @@ class _AuthInputFieldState extends State<AuthInputField> {
           height: 60,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage(NewAppAssets.loginInputBackground),
+              image: AssetImage(NewAppAssets.loginCard),
               fit: BoxFit.fill,
             ),
           ),

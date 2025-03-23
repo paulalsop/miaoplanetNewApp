@@ -61,8 +61,10 @@ class ConnectionData {
   /// 获取连接时间的格式化字符串 (HH:MM:SS)
   String get formattedDuration {
     final hours = connectedDuration.inHours.toString().padLeft(2, '0');
-    final minutes = (connectedDuration.inMinutes % 60).toString().padLeft(2, '0');
-    final seconds = (connectedDuration.inSeconds % 60).toString().padLeft(2, '0');
+    final minutes =
+        (connectedDuration.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds =
+        (connectedDuration.inSeconds % 60).toString().padLeft(2, '0');
     return '$hours:$minutes:$seconds';
   }
 }
@@ -89,16 +91,16 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
         if (next.value is Connected) {
           debugPrint('检测到已连接状态，更新UI...');
           newStatus = ConnectionStatus.connected;
-          
+
           // 更新状态并启动计时器
           state = state.copyWith(
             status: newStatus,
             connectedDuration: Duration.zero,
           );
-          
+
           // 确保计时器已启动
           _setupTimers();
-          
+
           debugPrint('状态已更新为Connected: ${state.status}');
         } else if (next.value is Connecting) {
           debugPrint('检测到Connecting状态，更新UI...');
@@ -113,7 +115,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
             downloadSpeed: 0,
             uploadSpeed: 0,
           );
-          
+
           // 断开时取消计时器
           _durationTimer?.cancel();
           _speedUpdateTimer?.cancel();
@@ -128,7 +130,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
     try {
       final currentStatus = await ref.read(connectionNotifierProvider.future);
       debugPrint('初始化时检查到连接状态: ${currentStatus.runtimeType}');
-      
+
       if (currentStatus is Connected) {
         debugPrint('应用启动时已连接，更新UI状态...');
         state = state.copyWith(status: ConnectionStatus.connected);
@@ -137,7 +139,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
     } catch (e) {
       debugPrint('检查初始连接状态失败: $e');
     }
-    
+
     // 如果是第一次启动应用，自动获取订阅链接和配置
     if (!_initialSetupDone) {
       _initialSetupDone = true;
@@ -151,7 +153,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
       final prefs = await SharedPreferences.getInstance();
       final serverName = prefs.getString('selected_server_name') ?? 'Auto';
       final pingValue = prefs.getInt('selected_server_ping') ?? 100;
-      
+
       state = state.copyWith(
         serverName: serverName,
         pingValue: pingValue,
@@ -177,33 +179,36 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
     // 取消可能已经存在的计时器
     _durationTimer?.cancel();
     _speedUpdateTimer?.cancel();
-    
+
     // 创建新的计时器
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.status == ConnectionStatus.connected) {
         state = state.copyWith(
-          connectedDuration: state.connectedDuration + const Duration(seconds: 1),
+          connectedDuration:
+              state.connectedDuration + const Duration(seconds: 1),
         );
       }
     });
-    
+
     // 创建网速更新计时器
     _speedUpdateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.status == ConnectionStatus.connected) {
         // 这里需要从实际流量数据中获取，这里只是模拟
-        final downloadSpeed = (state.downloadSpeed + _getRandomSpeed()).clamp(0.0, 500.0);
-        final uploadSpeed = (state.uploadSpeed + _getRandomSpeed()).clamp(0.0, 200.0);
-        
+        final downloadSpeed =
+            (state.downloadSpeed + _getRandomSpeed()).clamp(0.0, 500.0);
+        final uploadSpeed =
+            (state.uploadSpeed + _getRandomSpeed()).clamp(0.0, 200.0);
+
         state = state.copyWith(
           downloadSpeed: downloadSpeed,
           uploadSpeed: uploadSpeed,
         );
       }
     });
-    
+
     debugPrint('计时器已设置');
   }
-  
+
   // 生成随机网速变化（模拟）
   double _getRandomSpeed() {
     final random = DateTime.now().millisecondsSinceEpoch % 100 - 50;
@@ -215,22 +220,26 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
     try {
       // 尝试直接获取订阅链接，不依赖于 profileRepository
       await _setupSubscription();
-      
+
       // 成功获取并添加订阅后，尝试查看是否有活跃配置文件
       try {
         debugPrint('尝试检查活跃配置文件...');
         final profileRepo = await ref.read(profileRepositoryProvider.future);
         debugPrint('ProfileRepository加载完成');
-        
+
         final profiles = await profileRepo.watchAll().first;
-        final activeProfiles = profiles.getOrElse(
-          (failure) {
-            debugPrint('获取配置文件列表失败: $failure');
-            return [];
-          },
-        ).where((profile) => profile.active).toList();
-        
-        final activeProfile = activeProfiles.isNotEmpty ? activeProfiles.first : null;
+        final activeProfiles = profiles
+            .getOrElse(
+              (failure) {
+                debugPrint('获取配置文件列表失败: $failure');
+                return [];
+              },
+            )
+            .where((profile) => profile.active)
+            .toList();
+
+        final activeProfile =
+            activeProfiles.isNotEmpty ? activeProfiles.first : null;
         if (activeProfile != null) {
           debugPrint('已存在活跃配置文件: ${activeProfile.name}');
           // 更新服务器名称
@@ -247,7 +256,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
       debugPrint('错误堆栈: $stackTrace');
     }
   }
-  
+
   // 单独提取订阅设置方法，以便于错误处理和重试
   Future<void> _setupSubscription() async {
     // 确保HttpService已初始化
@@ -261,29 +270,29 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
       debugPrint('HTTP服务初始化失败: $e');
       // 即使HTTP服务初始化失败，仍然尝试获取token和订阅链接
     }
-    
+
     final token = await getToken();
     if (token == null) {
       debugPrint('未找到token，无法获取订阅链接');
       return;
     }
-    
+
     try {
       // 获取订阅链接
       final userService = UserService();
       String? subscribeUrl;
-      
+
       // 尝试多次获取订阅链接
       for (int i = 0; i < 3; i++) {
         try {
           subscribeUrl = await userService.getSubscriptionLink(token);
           if (subscribeUrl != null) break;
         } catch (e) {
-          debugPrint('第${i+1}次获取订阅链接失败: $e');
+          debugPrint('第${i + 1}次获取订阅链接失败: $e');
           if (i < 2) await Future.delayed(Duration(seconds: 2)); // 延迟2秒后重试
         }
       }
-      
+
       if (subscribeUrl != null) {
         debugPrint('成功获取订阅链接: $subscribeUrl');
         try {
@@ -305,43 +314,42 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
   /// 连接到服务器
   Future<void> connect(BuildContext? context) async {
     if (state.status != ConnectionStatus.disconnected) return;
-    
+
     // 设置为连接中状态
     state = state.copyWith(status: ConnectionStatus.connecting);
-    
+
     try {
       // 确保有订阅链接
       await _setupSubscription();
-      
+
       // 直接使用现有的连接服务，不依赖profileRepository
       final connectionNotifier = ref.read(connectionNotifierProvider.notifier);
-      
+
       // 重试连接，最多3次
       Exception? lastError;
       for (int i = 0; i < 3; i++) {
         try {
-          debugPrint('尝试连接 (尝试 ${i+1}/3)...');
+          debugPrint('尝试连接 (尝试 ${i + 1}/3)...');
           await connectionNotifier.toggleConnection();
           debugPrint('连接成功');
-          
+
           // 手动更新状态为已连接
           state = state.copyWith(
-            status: ConnectionStatus.connected,
-            connectedDuration: Duration.zero
-          );
-          
+              status: ConnectionStatus.connected,
+              connectedDuration: Duration.zero);
+
           // 确保定时器运行
           _setupTimers();
-          
+
           debugPrint('连接后UI状态已更新: ${state.status}');
           return; // 连接成功，直接返回
         } catch (e) {
           lastError = e is Exception ? e : Exception(e.toString());
-          debugPrint('第${i+1}次连接尝试失败: $e');
+          debugPrint('第${i + 1}次连接尝试失败: $e');
           if (i < 2) await Future.delayed(Duration(seconds: 1)); // 延迟后重试
         }
       }
-      
+
       // 如果所有尝试均失败
       throw lastError ?? Exception("连接失败，原因未知");
     } catch (e, stackTrace) {
@@ -349,7 +357,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
       debugPrint('连接错误堆栈: $stackTrace');
       // 恢复为断开状态
       state = state.copyWith(status: ConnectionStatus.disconnected);
-      
+
       // 如果提供了上下文，显示错误提示
       if (context != null) {
         ConnectionErrorHandler.showErrorToast(context, e);
@@ -360,16 +368,16 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
   /// 断开连接
   Future<void> disconnect() async {
     if (state.status == ConnectionStatus.disconnected) return;
-    
+
     try {
       debugPrint('正在尝试断开VPN连接...');
-      
+
       // 直接使用_disconnect方法而不是toggleConnection
       final connectionNotifier = ref.read(connectionNotifierProvider.notifier);
-      
+
       // 使用toggleConnection方法断开连接
       await connectionNotifier.toggleConnection();
-      
+
       // 手动更新UI状态为断开连接
       state = state.copyWith(
         status: ConnectionStatus.disconnected,
@@ -377,16 +385,15 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
         downloadSpeed: 0,
         uploadSpeed: 0,
       );
-      
+
       // 停止计时器
       _durationTimer?.cancel();
       _speedUpdateTimer?.cancel();
 
       debugPrint('断开连接命令已发送，UI状态已更新: ${state.status}');
-
     } catch (e) {
       debugPrint('断开连接出错: $e');
-      
+
       // 尝试备用方法
       try {
         debugPrint('尝试使用备用方法断开连接...');
@@ -394,7 +401,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
         if (connectionRepo != null) {
           await connectionRepo.disconnect().run();
           debugPrint('备用方法断开连接成功');
-          
+
           // 更新UI状态
           state = state.copyWith(
             status: ConnectionStatus.disconnected,
@@ -412,7 +419,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
   /// 强制更新UI状态为断开（不进行实际VPN断开操作）
   void forceDisconnectUI() {
     debugPrint('强制将UI状态更新为已断开');
-    
+
     // 手动更新UI状态为断开连接
     state = state.copyWith(
       status: ConnectionStatus.disconnected,
@@ -420,26 +427,26 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
       downloadSpeed: 0,
       uploadSpeed: 0,
     );
-    
+
     // 停止计时器
     _durationTimer?.cancel();
     _speedUpdateTimer?.cancel();
-    
+
     debugPrint('UI状态已更新为已断开');
   }
-  
+
   /// 强制更新UI状态为已连接（不进行实际VPN连接操作）
   void forceUpdateConnectedUI() {
     debugPrint('强制将UI状态更新为已连接');
-    
+
     // 手动更新UI状态为已连接
     state = state.copyWith(
       status: ConnectionStatus.connected,
     );
-    
+
     // 确保计时器已启动
     _setupTimers();
-    
+
     debugPrint('UI状态已更新为已连接');
   }
 
@@ -461,6 +468,7 @@ class ConnectionNotifier extends StateNotifier<ConnectionData> {
 }
 
 /// 全局连接状态提供者
-final connectionProvider = StateNotifierProvider<ConnectionNotifier, ConnectionData>((ref) {
+final connectionProvider =
+    StateNotifierProvider<ConnectionNotifier, ConnectionData>((ref) {
   return ConnectionNotifier(ref);
 });

@@ -20,23 +20,23 @@ class RegisterPage extends HookWidget {
     final confirmPasswordController = useTextEditingController();
     final inviteCodeController = useTextEditingController();
     final emailCodeController = useTextEditingController();
-    
+
     // 系统配置状态
     final isConfigLoading = useState(true);
     final isEmailVerifyEnabled = useState(false);
     final isInviteForceEnabled = useState(false);
     final isRecaptchaEnabled = useState(false);
-    
+
     // 倒计时状态
     final countdownSeconds = useState(0);
     final canSendCode = useState(true);
-    
+
     // 表单是否有效
     final isFormValid = useState(false);
-    
+
     // 是否正在提交
     final isSubmitting = useState(false);
-    
+
     // 初始化配置
     useEffect(() {
       // 加载系统配置
@@ -46,7 +46,8 @@ class RegisterPage extends HookWidget {
           isEmailVerifyEnabled.value = config['is_email_verify'] == 1;
           isInviteForceEnabled.value = config['is_invite_force'] == 1;
           isRecaptchaEnabled.value = config['is_recaptcha'] == 1;
-          debugPrint('【RegisterPage】系统配置加载完成: 邮箱验证=${isEmailVerifyEnabled.value}, 强制邀请码=${isInviteForceEnabled.value}, 图形验证码=${isRecaptchaEnabled.value}');
+          debugPrint(
+              '【RegisterPage】系统配置加载完成: 邮箱验证=${isEmailVerifyEnabled.value}, 强制邀请码=${isInviteForceEnabled.value}, 图形验证码=${isRecaptchaEnabled.value}');
         } catch (e) {
           debugPrint('【RegisterPage】加载系统配置失败: $e');
           // 默认设置
@@ -57,16 +58,16 @@ class RegisterPage extends HookWidget {
           isConfigLoading.value = false;
         }
       }
-      
+
       loadConfig();
       return null;
     }, []);
-    
+
     // 开始倒计时
     void startCountdown() {
       countdownSeconds.value = 60;
       canSendCode.value = false;
-      
+
       Timer.periodic(const Duration(seconds: 1), (timer) {
         if (countdownSeconds.value > 0) {
           countdownSeconds.value--;
@@ -76,11 +77,11 @@ class RegisterPage extends HookWidget {
         }
       });
     }
-    
+
     // 发送验证码
     Future<void> sendVerificationCode() async {
       if (!canSendCode.value) return;
-      
+
       final email = usernameController.text.trim();
       if (email.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,7 +92,7 @@ class RegisterPage extends HookWidget {
         );
         return;
       }
-      
+
       // 邮箱格式验证
       final emailValidation = AuthValidator.validateEmail(email);
       if (!emailValidation.isValid) {
@@ -103,7 +104,7 @@ class RegisterPage extends HookWidget {
         );
         return;
       }
-      
+
       // 显示加载指示器
       showDialog(
         context: context,
@@ -112,19 +113,20 @@ class RegisterPage extends HookWidget {
           child: CircularProgressIndicator(),
         ),
       );
-      
+
       try {
-        final success = await AuthService.instance.sendEmailVerificationCode(email);
-        
+        final success =
+            await AuthService.instance.sendEmailVerificationCode(email);
+
         // 关闭加载指示器
         if (context.mounted) {
           Navigator.of(context).pop();
         }
-        
+
         if (success) {
           // 开始倒计时
           startCountdown();
-          
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('验证码已发送，请查收邮件')),
@@ -145,7 +147,7 @@ class RegisterPage extends HookWidget {
         if (context.mounted) {
           Navigator.of(context).pop();
         }
-        
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -159,32 +161,38 @@ class RegisterPage extends HookWidget {
 
     // 验证表单
     void validateForm() {
-      final isUsernameValid = AuthValidator.validateEmail(usernameController.text).isValid;
-      final isPasswordValid = AuthValidator.validatePassword(passwordController.text).isValid;
+      final isUsernameValid =
+          AuthValidator.validateEmail(usernameController.text).isValid;
+      final isPasswordValid =
+          AuthValidator.validatePassword(passwordController.text).isValid;
       final isConfirmPasswordValid = AuthValidator.validateConfirmPassword(
         passwordController.text,
         confirmPasswordController.text,
       ).isValid;
-      
-      // 邀请码检查：如果强制邀请码或者用户填写了邀请码，则验证
-      final isInviteCodeValid = !isInviteForceEnabled.value || 
-                               AuthValidator.validateInviteCode(inviteCodeController.text).isValid;
-      
-      // 邮箱验证码检查：如果需要邮箱验证，则验证码不能为空
-      final isEmailCodeValid = !isEmailVerifyEnabled.value || 
-                               AuthValidator.validateVerificationCode(emailCodeController.text).isValid;
 
-      isFormValid.value = isUsernameValid && isPasswordValid && isConfirmPasswordValid && 
-                         isInviteCodeValid && isEmailCodeValid;
+      // 邀请码检查：如果强制邀请码或者用户填写了邀请码，则验证
+      final isInviteCodeValid = !isInviteForceEnabled.value ||
+          AuthValidator.validateInviteCode(inviteCodeController.text).isValid;
+
+      // 邮箱验证码检查：如果需要邮箱验证，则验证码不能为空
+      final isEmailCodeValid = !isEmailVerifyEnabled.value ||
+          AuthValidator.validateVerificationCode(emailCodeController.text)
+              .isValid;
+
+      isFormValid.value = isUsernameValid &&
+          isPasswordValid &&
+          isConfirmPasswordValid &&
+          isInviteCodeValid &&
+          isEmailCodeValid;
     }
 
     // 处理注册
     Future<void> handleRegister() async {
       if (isSubmitting.value) return;
-      
+
       // 设置为提交状态
       isSubmitting.value = true;
-      
+
       // 显示加载指示器
       showDialog(
         context: context,
@@ -196,16 +204,18 @@ class RegisterPage extends HookWidget {
 
       try {
         // 调用AuthService进行注册
-        final emailCode = isEmailVerifyEnabled.value ? emailCodeController.text.trim() : "";
-        final inviteCode = isInviteForceEnabled.value ? inviteCodeController.text.trim() : 
-                         inviteCodeController.text.trim(); // 非强制但用户填写了也要发送
-        
+        final emailCode =
+            isEmailVerifyEnabled.value ? emailCodeController.text.trim() : "";
+        final inviteCode = isInviteForceEnabled.value
+            ? inviteCodeController.text.trim()
+            : inviteCodeController.text.trim(); // 非强制但用户填写了也要发送
+
         debugPrint('【RegisterPage】开始注册...');
         debugPrint('【RegisterPage】邮箱: ${usernameController.text.trim()}');
         debugPrint('【RegisterPage】密码: ${passwordController.text.trim()}');
         debugPrint('【RegisterPage】邀请码: $inviteCode');
         debugPrint('【RegisterPage】邮箱验证码: $emailCode');
-        
+
         final success = await AuthService.instance.register(
           usernameController.text.trim(),
           passwordController.text.trim(),
@@ -330,9 +340,9 @@ class RegisterPage extends HookWidget {
                       AuthInputField(
                         controller: passwordController,
                         hintText: '输入密码 (8-20位字符)',
-                        iconPath: NewAppAssets.registerLockIcon,
+                        iconPath: NewAppAssets.registerPasswordIcon,
                         obscureText: true,
-                        eyeIconPath: NewAppAssets.loginEyeIcon,
+                        eyeIconPath: NewAppAssets.loginPasswordVisibleIcon,
                         validator: (value) {
                           validateForm();
                           return AuthValidator.validatePassword(value);
@@ -347,9 +357,9 @@ class RegisterPage extends HookWidget {
                       AuthInputField(
                         controller: confirmPasswordController,
                         hintText: '确认密码',
-                        iconPath: NewAppAssets.registerLockIcon,
+                        iconPath: NewAppAssets.registerPasswordIcon,
                         obscureText: true,
-                        eyeIconPath: NewAppAssets.loginEyeIcon,
+                        eyeIconPath: NewAppAssets.loginPasswordVisibleIcon,
                         validator: (value) {
                           validateForm();
                           return AuthValidator.validateConfirmPassword(
@@ -362,7 +372,7 @@ class RegisterPage extends HookWidget {
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // 邮箱验证码输入框 (如果需要邮箱验证)
                       if (isEmailVerifyEnabled.value)
                         Row(
@@ -375,7 +385,8 @@ class RegisterPage extends HookWidget {
                                 iconPath: NewAppAssets.registerShieldIcon,
                                 validator: (value) {
                                   validateForm();
-                                  return AuthValidator.validateVerificationCode(value);
+                                  return AuthValidator.validateVerificationCode(
+                                      value);
                                 },
                                 maxLength: 6,
                                 keyboardType: TextInputType.number,
@@ -386,16 +397,21 @@ class RegisterPage extends HookWidget {
                             Expanded(
                               flex: 3,
                               child: ElevatedButton(
-                                onPressed: canSendCode.value ? sendVerificationCode : null,
+                                onPressed: canSendCode.value
+                                    ? sendVerificationCode
+                                    : null,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF7B5FF5),
-                                  padding: const EdgeInsets.symmetric(vertical: 15),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 15),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
                                 child: Text(
-                                  canSendCode.value ? '发送验证码' : '${countdownSeconds.value}秒',
+                                  canSendCode.value
+                                      ? '发送验证码'
+                                      : '${countdownSeconds.value}秒',
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 12,
@@ -405,19 +421,21 @@ class RegisterPage extends HookWidget {
                             ),
                           ],
                         ),
-                      if (isEmailVerifyEnabled.value) 
+                      if (isEmailVerifyEnabled.value)
                         const SizedBox(height: 16),
 
                       // 邀请码输入框（如果需要或强制）
                       AuthInputField(
                         controller: inviteCodeController,
-                        hintText: isInviteForceEnabled.value ? '输入邀请码（必填）' : '输入邀请码（选填）',
+                        hintText: isInviteForceEnabled.value
+                            ? '输入邀请码（必填）'
+                            : '输入邀请码（选填）',
                         iconPath: NewAppAssets.registerShieldIcon,
                         validator: (value) {
                           validateForm();
-                          return isInviteForceEnabled.value ? 
-                                 AuthValidator.validateInviteCode(value) : 
-                                 ValidationResult.success(); // 非强制时总是有效
+                          return isInviteForceEnabled.value
+                              ? AuthValidator.validateInviteCode(value)
+                              : ValidationResult.success(); // 非强制时总是有效
                         },
                         maxLength: 20,
                         keyboardType: TextInputType.text,
@@ -433,7 +451,9 @@ class RegisterPage extends HookWidget {
 
                       // 注册按钮
                       GestureDetector(
-                        onTap: (isFormValid.value && !isSubmitting.value) ? handleRegister : null,
+                        onTap: (isFormValid.value && !isSubmitting.value)
+                            ? handleRegister
+                            : null,
                         child: Opacity(
                           opacity: isFormValid.value ? 1.0 : 0.7,
                           child: Container(
@@ -448,22 +468,22 @@ class RegisterPage extends HookWidget {
                             ),
                             alignment: Alignment.center,
                             child: isSubmitting.value
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.0,
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.0,
+                                    ),
+                                  )
+                                : const Text(
+                                    '注册',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                )
-                              : const Text(
-                                  '注册',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
                           ),
                         ),
                       ),

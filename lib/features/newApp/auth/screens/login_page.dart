@@ -114,10 +114,11 @@ class _LoginPageState extends State<LoginPage> {
                 child: GestureDetector(
                   onTap: () {
                     // 导航到首页并清除所有其他页面
-                    NewAppRoutes.navigateAndRemoveUntil(context, NewAppRoutes.home);
+                    NewAppRoutes.navigateAndRemoveUntil(
+                        context, NewAppRoutes.home);
                   },
                   child: Image.asset(
-                    NewAppAssets.loginCloseIcon,
+                    NewAppAssets.loginQuitIcon,
                     width: 32,
                     height: 32,
                   ),
@@ -165,10 +166,11 @@ class _LoginPageState extends State<LoginPage> {
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Image.asset(
-                            NewAppAssets.loginEyeIcon,
+                            NewAppAssets.loginPasswordVisibleIcon,
                             width: 24,
                             height: 24,
-                            color: _isPasswordVisible ? Colors.blue : Colors.grey,
+                            color:
+                                _isPasswordVisible ? Colors.blue : Colors.grey,
                           ),
                         ),
                       ),
@@ -194,7 +196,8 @@ class _LoginPageState extends State<LoginPage> {
                         TextButton(
                           onPressed: () {
                             // 导航到注册页面
-                            NewAppRoutes.navigateTo(context, NewAppRoutes.register);
+                            NewAppRoutes.navigateTo(
+                                context, NewAppRoutes.register);
                           },
                           child: const Text(
                             'Sign In',
@@ -222,23 +225,23 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(25),
                           ),
                         ),
-                        child: _isLoading 
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.0,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.0,
+                                ),
+                              )
+                            : const Text(
+                                '登录',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            )
-                          : const Text(
-                              '登录',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                       ),
                     ),
                   ],
@@ -262,7 +265,7 @@ class _LoginPageState extends State<LoginPage> {
       height: 56,
       decoration: BoxDecoration(
         image: DecorationImage(
-          image: AssetImage(NewAppAssets.loginInputBackground),
+          image: AssetImage(NewAppAssets.loginCard),
           fit: BoxFit.fill,
         ),
       ),

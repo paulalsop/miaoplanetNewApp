@@ -18,7 +18,8 @@ import '../../server/models/server_model.dart';
 // 系统底层连接相关
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/connection/data/connection_data_providers.dart';
-import 'package:hiddify/features/connection/model/connection_status.dart' as core_status;
+import 'package:hiddify/features/connection/model/connection_status.dart'
+    as core_status;
 
 /// 主页
 class HomePage extends ConsumerStatefulWidget {
@@ -28,7 +29,8 @@ class HomePage extends ConsumerStatefulWidget {
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends ConsumerState<HomePage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
 
@@ -60,40 +62,37 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final connectionData = ref.watch(provider.connectionProvider);
-    final isConnected = connectionData.status == provider.ConnectionStatus.connected;
+    final isConnected =
+        connectionData.status == provider.ConnectionStatus.connected;
 
     // 添加调试日志以便于排错
     debugPrint('首页显示状态: ${connectionData.status}');
 
-    // 状态监听 - 优化，避免不必要的状态更新
+    // 状态监听 - 优化，避免不必要的状态更新 ,
+
     ref.listen<AsyncValue<core_status.ConnectionStatus>>(
-      connectionNotifierProvider,
-      (previous, next) {
-        final uiNotifier = ref.read(provider.connectionProvider.notifier);
-        final currentUIStatus = ref.read(provider.connectionProvider).status;
+        connectionNotifierProvider, (previous, next) {
+      next.when(
+        loading: () => debugPrint('系统连接状态加载中...'),
+        error: (error, stack) {
+          debugPrint('系统连接状态错误: $error');
+          final uiNotifier = ref.read(provider.connectionProvider.notifier);
+          uiNotifier.forceDisconnectUI();
+        },
+        data: (status) {
+          final uiNotifier = ref.read(provider.connectionProvider.notifier);
+          final currentUIStatus = ref.read(provider.connectionProvider).status;
 
-        if (next is AsyncData) {
-          // 仅在状态发生实际变化时更新UI
-          if (next.value is core_status.Connected &&
+          if (status is core_status.Connected &&
               currentUIStatus != provider.ConnectionStatus.connected) {
-            // 系统已连接，但UI显示未连接，强制更新
             uiNotifier.forceUpdateConnectedUI();
-            debugPrint('检测到系统已连接，而UI未连接，强制更新UI为连接状态');
-          } else if (next.value is core_status.Disconnected &&
-                    currentUIStatus != provider.ConnectionStatus.disconnected) {
-            // 系统已断开，但UI显示已连接，强制更新
+          } else if (status is core_status.Disconnected &&
+              currentUIStatus != provider.ConnectionStatus.disconnected) {
             uiNotifier.forceDisconnectUI();
-            debugPrint('检测到系统已断开，而UI已连接，强制更新UI为断开状态');
           }
-        } else if (next is AsyncError) {
-          // 系统状态出错时，记录错误但不影响UI
-          debugPrint('系统连接状态错误: ${next.error}');
-
-          // 可选：在错误严重时强制断开UI连接
-          // uiNotifier.forceDisconnectUI();
-        }
-      }
-    );
+        },
+      );
+    });
 
     final screenHeight = SizeUtils.screenHeight(context);
 
@@ -111,7 +110,9 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
         height: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage(isConnected ? NewAppAssets.homeConnectedBackground : NewAppAssets.homeBackground),
+            image: AssetImage(isConnected
+                ? NewAppAssets.homeConnectedBackground
+                : NewAppAssets.homeBackground),
             fit: BoxFit.cover,
           ),
         ),
@@ -155,13 +156,15 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
                         _buildSpeedInfo(
                           icon: Icons.download_rounded,
                           label: 'Download',
-                          value: '${connectionData.downloadSpeed.toStringAsFixed(2)} KB/s',
+                          value:
+                              '${connectionData.downloadSpeed.toStringAsFixed(2)} KB/s',
                         ),
                         const SizedBox(width: 40),
                         _buildSpeedInfo(
                           icon: Icons.upload_rounded,
                           label: 'Upload',
-                          value: '${connectionData.uploadSpeed.toStringAsFixed(2)} KB/s',
+                          value:
+                              '${connectionData.uploadSpeed.toStringAsFixed(2)} KB/s',
                         ),
                       ],
                     ),
@@ -201,9 +204,13 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
                       cursor: SystemMouseCursors.click,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 20),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isConnected ? const Color.fromARGB(255, 1, 253, 38).withOpacity(0.7) : Colors.grey.withOpacity(0.7),
+                          color: isConnected
+                              ? const Color.fromARGB(255, 1, 253, 38)
+                                  .withOpacity(0.7)
+                              : Colors.grey.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
@@ -217,13 +224,17 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isConnected ? Icons.check_circle : Icons.info_outline,
+                              isConnected
+                                  ? Icons.check_circle
+                                  : Icons.info_outline,
                               color: Colors.white,
                               size: 18,
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              isConnected ? 'Connected (Tap to disconnect)' : 'Disconnected (Tap to connect)',
+                              isConnected
+                                  ? 'Connected (Tap to disconnect)'
+                                  : 'Disconnected (Tap to connect)',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -325,13 +336,15 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
       // 然后尝试系统级连接
       try {
         // 使用系统级连接器
-        final connectionNotifier = ref.read(connectionNotifierProvider.notifier);
+        final connectionNotifier =
+            ref.read(connectionNotifierProvider.notifier);
 
         // 安全地获取系统状态
         final systemStatusAsync = ref.read(connectionNotifierProvider);
 
         // 根据状态类型执行不同操作
-        if (systemStatusAsync is AsyncData && systemStatusAsync.value is core_status.Disconnected) {
+        if (systemStatusAsync is AsyncData &&
+            systemStatusAsync.value is core_status.Disconnected) {
           // 正常状态：系统已断开，执行连接
           debugPrint('检测到系统已断开，执行连接操作');
           await connectionNotifier.toggleConnection();
@@ -353,7 +366,6 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
       // 无论系统级连接成功与否，确保UI状态更新为连接
       debugPrint('执行UI级连接');
       await uiNotifier.connect(context);
-
     } catch (e) {
       debugPrint('所有连接尝试均失败: $e');
       // 通知用户连接失败
@@ -436,7 +448,8 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
   Widget _buildServerSelectButton(String serverName) {
     // 获取最新的状态
     final connectionData = ref.watch(provider.connectionProvider);
-    final isConnected = connectionData.status == provider.ConnectionStatus.connected;
+    final isConnected =
+        connectionData.status == provider.ConnectionStatus.connected;
 
     return ServerInfoButton(
       status: connectionData.status,
@@ -444,7 +457,9 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
       pingValue: connectionData.pingValue,
       onTap: () async {
         // 打开服务器选择页面
-        final server = await server_routes.ServerRoutes.openServerSelectionFullScreen(context);
+        final server =
+            await server_routes.ServerRoutes.openServerSelectionFullScreen(
+                context);
         if (server != null && context.mounted) {
           // 处理选中的服务器
           final notifier = ref.read(provider.connectionProvider.notifier);
@@ -463,33 +478,34 @@ class _HomePageState extends ConsumerState<HomePage> with SingleTickerProviderSt
   }
 
   // 强制断开VPN连接
-Future<void> _forceDisconnectVPN(BuildContext context) async {
-  try {
-    // 1. 先更新UI状态为断开
-    final uiNotifier = ref.read(provider.connectionProvider.notifier);
-    uiNotifier.forceDisconnectUI();
-    
-    // 2. 尝试直接调用connectionRepository断开
+  Future<void> _forceDisconnectVPN(BuildContext context) async {
     try {
-      final connectionRepo = ref.read(connectionRepositoryProvider);
-      if (connectionRepo != null) {
-        await connectionRepo.disconnect().run();
-        debugPrint('已通过Repository断开连接');
+      // 1. 先更新UI状态为断开
+      final uiNotifier = ref.read(provider.connectionProvider.notifier);
+      uiNotifier.forceDisconnectUI();
+
+      // 2. 尝试直接调用connectionRepository断开
+      try {
+        final connectionRepo = ref.read(connectionRepositoryProvider);
+        if (connectionRepo != null) {
+          await connectionRepo.disconnect().run();
+          debugPrint('已通过Repository断开连接');
+        }
+      } catch (e) {
+        debugPrint('Repository断开失败: $e');
+
+        // 3. 如果上面失败，尝试alternative方法
+        try {
+          final connectionNotifier =
+              ref.read(connectionNotifierProvider.notifier);
+          await connectionNotifier.abortConnection();
+          debugPrint('已通过abortConnection断开连接');
+        } catch (e2) {
+          debugPrint('所有断开方法均失败: $e2');
+        }
       }
     } catch (e) {
-      debugPrint('Repository断开失败: $e');
-      
-      // 3. 如果上面失败，尝试alternative方法
-      try {
-        final connectionNotifier = ref.read(connectionNotifierProvider.notifier);
-        connectionNotifier.abortConnection();
-        debugPrint('已通过abortConnection断开连接');
-      } catch (e2) {
-        debugPrint('所有断开方法均失败: $e2');
-      }
+      debugPrint('断开操作失败: $e');
     }
-  } catch (e) {
-    debugPrint('断开操作失败: $e');
   }
-}
 }

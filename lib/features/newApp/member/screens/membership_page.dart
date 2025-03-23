@@ -39,13 +39,20 @@ class _MembershipPageState extends State<MembershipPage> {
   }
 
   /// 获取当前会员类型对应的背景图片
-  String get _backgroundImage => _selectedType == MembershipType.ordinary ? NewAppAssets.ordinaryMemberBackground : NewAppAssets.shareholderMemberBackground;
+  String get _backgroundImage => _selectedType == MembershipType.ordinary
+      ? NewAppAssets.ordinaryMemberBackground
+      : NewAppAssets.shareholderMemberBackground;
 
   /// 获取当前会员类型对应的关闭按钮图标
-  String get _closeIcon => _selectedType == MembershipType.ordinary ? NewAppAssets.ordinaryMemberCloseIcon : NewAppAssets.shareholderMemberCloseIcon;
+  String get _closeIcon => _selectedType == MembershipType.ordinary
+      ? NewAppAssets.ordinaryMemberQuitIcon
+      : NewAppAssets.shareholderMemberQuitIcon;
 
   /// 获取当前会员类型对应的套餐列表
-  List<MembershipPlan> get _currentPlans => _selectedType == MembershipType.ordinary ? ordinaryMembershipPlans : shareholderMembershipPlans;
+  List<MembershipPlan> get _currentPlans =>
+      _selectedType == MembershipType.ordinary
+          ? ordinaryMembershipPlans
+          : shareholderMembershipPlans;
 
   /// 处理会员类型变化
   void _handleTypeChanged(MembershipType type) {
@@ -64,12 +71,16 @@ class _MembershipPageState extends State<MembershipPage> {
   /// 处理订阅提交
   void _handleSubscribe() {
     // 获取选中的套餐
-    final selectedPlan = _selectedType == MembershipType.ordinary ? ordinaryMembershipPlans.firstWhere((plan) => plan.id == _selectedOrdinaryPlanId) : shareholderMembershipPlans.first;
+    final selectedPlan = _selectedType == MembershipType.ordinary
+        ? ordinaryMembershipPlans
+            .firstWhere((plan) => plan.id == _selectedOrdinaryPlanId)
+        : shareholderMembershipPlans.first;
 
     // 显示订阅成功消息
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('成功订阅 ${_selectedType == MembershipType.ordinary ? "普通会员" : "股东会员"} - ${selectedPlan.name}'),
+        content: Text(
+            '成功订阅 ${_selectedType == MembershipType.ordinary ? "普通会员" : "股东会员"} - ${selectedPlan.name}'),
       ),
     );
 
@@ -95,7 +106,8 @@ class _MembershipPageState extends State<MembershipPage> {
             children: [
               // 顶部栏：会员类型切换和关闭按钮
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     // 会员类型切换标签

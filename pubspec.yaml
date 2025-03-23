@@ -143,8 +143,8 @@ flutter:
     - assets/images/newPageMaterials/home/disconnect/btn_home_Server.png
     - assets/images/newPageMaterials/home/disconnect/ic_server_planet.png
     - assets/images/newPageMaterials/home/disconnect/ic_server_more.png
-    - assets/images/newPageMaterials/home/disconnect/btn_home_unstart(big).png
-    - assets/images/newPageMaterials/home/disconnect/btn_home_unstart(small).png
+    - assets/images/newPageMaterials/home/disconnect/btn_home_unstartbig.png
+    - assets/images/newPageMaterials/home/disconnect/btn_home_unstartsmall.png
     - assets/images/newPageMaterials/home/disconnect/ic_unstart_activate.png
     - assets/images/newPageMaterials/home/disconnect/ic_home_tap.png
     - assets/images/newPageMaterials/home/connect/bg_home_bg.png
@@ -173,7 +173,7 @@ flutter:
     # 添加服务器界面相关的图片资源
     - assets/images/newPageMaterials/server/bg_Server_bg.png
     - assets/images/newPageMaterials/server/card_server_banner.png
-    - assets/images/newPageMaterials/server/card_server_card(purple).png
+    - assets/images/newPageMaterials/server/card_server_cardpurple.png
     - assets/images/newPageMaterials/server/ic_server_quit.png
     - assets/images/newPageMaterials/server/ic_card purplr_signal.png
     - assets/images/newPageMaterials/server/card_server_pag.png
@@ -182,8 +182,8 @@ flutter:
     - assets/images/newPageMaterials/server/ic_banner_crown.png
     # 添加普通会员界面相关的图片资源
     - assets/images/newPageMaterials/ordinaryMember/bg_vip_bg.png
-    - assets/images/newPageMaterials/ordinaryMember/btn_vip_btn(green).png
-    - assets/images/newPageMaterials/ordinaryMember/btn_vip_btn(white).png
+    - assets/images/newPageMaterials/ordinaryMember/btn_vip_btngreen.png
+    - assets/images/newPageMaterials/ordinaryMember/btn_vip_btnwhite.png
     - assets/images/newPageMaterials/ordinaryMember/ic_btn green_Select.png
     - assets/images/newPageMaterials/ordinaryMember/ic_btn white_normal.png
     - assets/images/newPageMaterials/ordinaryMember/btn_vip_Start.png
@@ -191,14 +191,14 @@ flutter:
     - assets/images/newPageMaterials/ordinaryMember/ic_vip_quit.png
     # 添加股东会员界面相关的图片资源
     - assets/images/newPageMaterials/shareholderMember/bg_stockholder_bg.png
-    - assets/images/newPageMaterials/shareholderMember/btn_stockholder_btn(green).png
+    - assets/images/newPageMaterials/shareholderMember/btn_stockholder_btngreen.png
     - assets/images/newPageMaterials/shareholderMember/ic_btn green_Select.png
     - assets/images/newPageMaterials/shareholderMember/btn_stockholder_start.png
     - assets/images/newPageMaterials/shareholderMember/pic_stockholder_badge.png
     - assets/images/newPageMaterials/shareholderMember/ic_stockholder_quit.png
     # 添加登录界面相关的图片资源
     - assets/images/newPageMaterials/login/bg_log in_bg.png
-    - assets/images/newPageMaterials/login/bg_log in_card(white).png
+    - assets/images/newPageMaterials/login/bg_log in_cardwhite.png
     - assets/images/newPageMaterials/login/ic_card_ Account.png
     - assets/images/newPageMaterials/login/ic_card_ lock.png
     - assets/images/newPageMaterials/login/ic_card_open.png
@@ -206,7 +206,7 @@ flutter:
     - assets/images/newPageMaterials/login/btn_log in_log in.png
     # 添加注册界面相关的图片资源
     - assets/images/newPageMaterials/register/bg_sign in_bg.png
-    - assets/images/newPageMaterials/register/bg_sign in_card(white).png
+    - assets/images/newPageMaterials/register/bg_sign in_cardwhite.png
     - assets/images/newPageMaterials/register/ic_card_ Account.png
     - assets/images/newPageMaterials/register/ic_card_ lock.png
     - assets/images/newPageMaterials/register/ic_card_shield.png
