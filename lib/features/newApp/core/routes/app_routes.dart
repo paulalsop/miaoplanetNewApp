@@ -3,6 +3,7 @@ import '../../auth/startup_page.dart';
 import '../../home/screens/home_page.dart';
 import '../../auth/screens/login_page.dart';
 import '../../auth/screens/register_page.dart';
+import '../../auth/screens/account_upgrade_page.dart';
 import '../../invitation/screens/invitation_page.dart';
 
 /// 新版应用的路由定义
@@ -24,6 +25,7 @@ class NewAppRoutes {
   static const String selectNode = '/newApp/node/select';
   static const String nodeDetails = '/newApp/node/details';
   static const String invitationCode = '/newApp/invitation/code';
+  static const String upgradeAccount = '/newApp/auth/upgrade';
 
   /// 注册所有路由
   static Map<String, WidgetBuilder> routes = {
@@ -32,6 +34,7 @@ class NewAppRoutes {
     login: (context) => const LoginPage(),
     register: (context) => const RegisterPage(),
     invitationCode: (context) => const InvitationPage(),
+    upgradeAccount: (context) => const AccountUpgradePage(),
     // 其他路由将在实现相应页面后添加
   };
 

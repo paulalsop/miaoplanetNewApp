@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/routes/app_routes.dart';
+import '../services/auth_service.dart';
 
 /// 登录页面
 class LoginPage extends StatefulWidget {
@@ -14,12 +15,80 @@ class _LoginPageState extends State<LoginPage> {
   final _accountController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
     _accountController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  // 处理登录逻辑
+  Future<void> _handleLogin() async {
+    // 隐藏键盘
+    FocusScope.of(context).unfocus();
+
+    // 获取输入
+    final email = _accountController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // 输入验证
+    if (email.isEmpty) {
+      _showError('请输入账号');
+      return;
+    }
+
+    if (password.isEmpty) {
+      _showError('请输入密码');
+      return;
+    }
+
+    // 设置加载状态
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // 调用登录方法
+      final success = await AuthService.instance.login(email, password);
+
+      // 处理登录结果
+      if (success) {
+        // 登录成功，导航到主页
+        if (mounted) {
+          NewAppRoutes.navigateAndRemoveUntil(context, NewAppRoutes.home);
+        }
+      } else {
+        // 登录失败
+        if (mounted) {
+          _showError('账号或密码错误，请重试');
+        }
+      }
+    } catch (e) {
+      // 发生异常
+      if (mounted) {
+        _showError('登录失败: $e');
+      }
+    } finally {
+      // 恢复状态
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // 显示错误信息
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade600,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -146,23 +215,30 @@ class _LoginPageState extends State<LoginPage> {
                       height: 50,
                       margin: const EdgeInsets.only(bottom: 20),
                       child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: 处理登录
-                        },
+                        onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF7B5FF5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
                           ),
                         ),
-                        child: const Text(
-                          '登录',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: _isLoading 
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.0,
+                              ),
+                            )
+                          : const Text(
+                              '登录',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                       ),
                     ),
                   ],

@@ -6,10 +6,31 @@ import 'package:hiddify/features/panel/xboard/services/http_service/domain_servi
 import 'package:http/http.dart' as http;
 
 class HttpService {
-  static String baseUrl = ''; // 替换为你的实际基础 URL
+  static String baseUrl = ''; // 基础URL
+  static bool isInitialized = false; // 跟踪初始化状态
+  
   // 初始化服务并设置动态域名
   static Future<void> initialize() async {
-    baseUrl = await DomainService.fetchValidDomain();
+    if (isInitialized) return; // 如果已初始化，则直接返回
+    
+    try {
+      baseUrl = await DomainService.fetchValidDomain();
+      print("成功初始化HttpService，使用域名: $baseUrl");
+      isInitialized = true;
+    } catch (e) {
+      print("HttpService初始化失败: $e");
+      
+      // 使用开发模式下的本地服务器作为最后的备用方案
+      if (kDebugMode) {
+        print("使用本地开发服务器作为备用");
+        baseUrl = 'http://localhost:8009'; // 本地开发服务器
+        isInitialized = true;
+        return;
+      }
+      
+      // 如果没有可用域名且不在开发模式，重新抛出异常
+      throw Exception("无法连接到任何可用服务器");
+    }
   }
 
   // 统一的 GET 请求方法
@@ -17,6 +38,15 @@ class HttpService {
     String endpoint, {
     Map<String, String>? headers,
   }) async {
+    // 确保HttpService已初始化
+    if (!isInitialized) {
+      try {
+        await initialize();
+      } catch (e) {
+        throw Exception("服务未初始化，无法执行请求: $e");
+      }
+    }
+    
     final url = Uri.parse('$baseUrl$endpoint');
 
     try {

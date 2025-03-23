@@ -52,14 +52,15 @@ Future<void> lazyBootstrap(
 // 初始化域名
   try {
     container.read(authProvider.notifier).state = false;
-    // print("Initializing domain...");
-    // await HttpService.initialize();
-    // print("Domain initialized successfully: ${HttpService.baseUrl}");
+    print("Initializing domain...");
+    await HttpService.initialize();
+    print("Domain initialized successfully: ${HttpService.baseUrl}");
   } catch (e) {
     // 如果初始化域名出错，设置为未登录状态
     print("Error during domain initialization: $e");
     container.read(authProvider.notifier).state = false;
-    return;
+    // 不要在这里返回，即使域名初始化失败也继续运行应用
+    print("Continuing application startup despite domain initialization failure");
   }
 
 // 尝试读取 token 并设置登录状态
@@ -166,6 +167,24 @@ Future<void> lazyBootstrap(
     "profile repository",
     () => container.read(profileRepositoryProvider.future),
   );
+
+  // 确保profileRepository已完全初始化
+  try {
+    print("等待profileRepository完全初始化...");
+    final profileRepo = await container.read(profileRepositoryProvider.future);
+    print("profileRepository初始化成功");
+    
+    // 加载所有配置文件以确保它们可用
+    print("正在加载配置文件列表...");
+    final profiles = await profileRepo.watchAll().first;
+    profiles.match(
+      (failure) => print("加载配置文件列表失败: $failure"),
+      (profileList) => print("成功加载${profileList.length}个配置文件")
+    );
+  } catch (e) {
+    print("profileRepository初始化过程中出错: $e");
+    // 不抛出异常，让应用程序继续运行
+  }
 
   await _safeInit(
     "active profile",

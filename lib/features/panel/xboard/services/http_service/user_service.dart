@@ -29,6 +29,16 @@ class UserService {
     }
   }
 
+  Future<String?> convertTempAccount(
+      String email, String password, String accessToken) async {
+    final result = await _httpService.postRequest(
+      "/api/v1/user/convertTempAccount",
+      {'email': email, 'password': password},
+      headers: {'Authorization': accessToken},
+    );
+    return result["data"] as String?;
+  }
+
   Future<String?> getSubscriptionLink(String accessToken) async {
     final result = await _httpService.getRequest(
       "/api/v1/user/getSubscribe",

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_assets.dart';
 import '../../auth/auth_routes.dart';
 import '../../auth/screens/login_page.dart';
@@ -98,6 +99,13 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
   // 初始化菜单项
   void _initMenuItems() {
     _menuItems = [
+      // 临时账号升级选项（仅当用户使用临时账号时显示）
+      // 注意：这个空的SideMenuItem会在build时被动态替换
+      SideMenuItem(
+        icon: NewAppAssets.menuInviteIcon, // 使用临时图标，会在build时判断是否显示
+        title: '', // 空标题
+        onTap: () {}, // 空函数
+      ),
       SideMenuItem(
         icon: NewAppAssets.menuInviteIcon,
         title: '邀请链接',
@@ -225,6 +233,12 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
     );
   }
 
+  // 检查是否为临时账号
+  Future<bool> _isTempAccount() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('is_temp_account') ?? false;
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -337,8 +351,7 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
 
             // 菜单项列表
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25),
+              child: SingleChildScrollView(
                 child: _buildMenuItems(),
               ),
             ),
@@ -406,43 +419,84 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
 
   // 构建菜单项列表
   Widget _buildMenuItems() {
-    return ListView.builder(
-      padding: EdgeInsets.zero,
-      itemCount: _menuItems.length,
-      itemBuilder: (context, index) {
-        final item = _menuItems[index];
-        return _buildMenuItem(item);
+    return FutureBuilder<bool>(
+      future: _isTempAccount(),
+      builder: (context, snapshot) {
+        List<Widget> menuWidgets = [];
+        
+        // 如果是临时账号，显示升级选项
+        if (snapshot.hasData && snapshot.data == true) {
+          menuWidgets.add(
+            _buildMenuItem(
+              icon: NewAppAssets.menuInviteIcon, // 使用临时图标，应替换为升级账号图标
+              title: '升级账号',
+              isHighlighted: true,
+              onTap: () {
+                widget.onClose();
+                // 导航到账号升级页面
+                if (context.mounted) {
+                  NewAppRoutes.navigateTo(context, NewAppRoutes.upgradeAccount);
+                }
+              },
+            ),
+          );
+          
+          // 添加分隔线
+          menuWidgets.add(const Divider(color: Colors.white24));
+        }
+        
+        // 添加其他菜单项，跳过第一个（临时账号占位符）
+        for (int i = 1; i < _menuItems.length; i++) {
+          final item = _menuItems[i];
+          menuWidgets.add(
+            _buildMenuItem(
+              icon: item.icon,
+              title: item.title,
+              onTap: item.onTap,
+            ),
+          );
+        }
+        
+        return Column(children: menuWidgets);
       },
     );
   }
 
   // 构建单个菜单项
-  Widget _buildMenuItem(SideMenuItem item) {
-    return GestureDetector(
-      onTap: item.onTap,
-      child: Container(
-        height: 50,
-        margin: const EdgeInsets.only(bottom: 16),
-        child: Row(
-          children: [
-            // 图标
-            Image.asset(
-              item.icon,
-              width: 24,
-              height: 24,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 16),
-
-            // 标题
-            Text(
-              item.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
+  Widget _buildMenuItem({
+    required String icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isHighlighted = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 12,
+          ),
+          child: Row(
+            children: [
+              Image.asset(
+                icon,
+                width: 24,
+                height: 24,
+                color: isHighlighted ? Colors.orange : Colors.white,
               ),
-            ),
-          ],
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  color: isHighlighted ? Colors.orange : Colors.white,
+                  fontSize: 16,
+                  fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

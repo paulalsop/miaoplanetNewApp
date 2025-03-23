@@ -34,80 +34,150 @@ class AddProfile extends _$AddProfile with AppLogger {
       _cancelToken?.cancel();
     });
     ref.listenSelf(
-      (previous, next) {
-        final t = ref.read(translationsProvider);
-        final notification = ref.read(inAppNotificationControllerProvider);
-        switch (next) {
-          case AsyncData(value: final _?):
-            notification.showSuccessToast(t.profile.save.successMsg);
-          case AsyncError(:final error):
-            if (error case ProfileInvalidUrlFailure()) {
-              notification.showErrorToast(t.failure.profiles.invalidUrl);
-            } else {
-              notification.showErrorDialog(
-                t.presentError(error, action: t.profile.add.failureMsg),
-              );
-            }
+      (previous, next) async {
+        try {
+          final sharedPrefs = await ref.read(sharedPreferencesProvider.future);
+          final t = ref.read(translationsProvider);
+          final notification = ref.read(inAppNotificationControllerProvider);
+          switch (next) {
+            case AsyncData(value: final _?):
+              notification.showSuccessToast(t.profile.save.successMsg);
+            case AsyncError(:final error):
+              if (error case ProfileInvalidUrlFailure()) {
+                notification.showErrorToast(t.failure.profiles.invalidUrl);
+              } else {
+                notification.showErrorDialog(
+                  t.presentError(error, action: t.profile.add.failureMsg),
+                );
+              }
+          }
+        } catch (e) {
+          loggy.warning("Error in listenSelf: $e");
         }
       },
     );
     return const AsyncData(null);
   }
 
-  ProfileRepository get _profilesRepo =>
-      ref.read(profileRepositoryProvider).requireValue;
+  ProfileRepository? _getProfileRepo() {
+    try {
+      return ref.read(profileRepositoryProvider).requireValue;
+    } catch (e) {
+      loggy.warning("获取ProfileRepository失败: $e");
+      return null;
+    }
+  }
+
   CancelToken? _cancelToken;
 
   Future<void> add(String rawInput) async {
     if (state.isLoading) return;
     state = const AsyncLoading();
-    // await check4Warp(rawInput);
-    state = await AsyncValue.guard(
-      () async {
-        final activeProfile = await ref.read(activeProfileProvider.future);
-        final markAsActive =
-            activeProfile == null || ref.read(Preferences.markNewProfileActive);
-        final TaskEither<ProfileFailure, Unit> task;
-        if (LinkParser.parse(rawInput) case (final link)?) {
-          loggy.debug("adding profile, url: [${link.url}]");
-          task = _profilesRepo.addByUrl(
-            link.url,
-            markAsActive: markAsActive,
-            cancelToken: _cancelToken = CancelToken(),
-          );
-        } else if (LinkParser.protocol(rawInput) case (final parsed)?) {
-          loggy.debug("adding profile, content");
-          var name = parsed.name;
-          var oldItem = await _profilesRepo.getByName(name);
-          if (name == "Hiddify WARP" && oldItem != null) {
-            _profilesRepo.deleteById(oldItem.id).run();
-          }
-          while (await _profilesRepo.getByName(name) != null) {
-            name += '${randomInt(0, 9).run()}';
-          }
-          task = _profilesRepo.addByContent(
-            parsed.content,
-            name: name,
-            markAsActive: markAsActive,
-          );
-        } else {
-          loggy.debug("invalid content");
-          throw const ProfileInvalidUrlFailure();
+    
+    // 添加重试逻辑
+    int retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        state = await AsyncValue.guard(
+          () async {
+            loggy.debug("尝试添加配置文件 (尝试 ${retryCount + 1}/${maxRetries})");
+            
+            // 安全地获取ProfileRepository
+            final repo = _getProfileRepo();
+            if (repo == null) {
+              loggy.debug("等待ProfileRepository初始化...");
+              await Future.delayed(Duration(milliseconds: 500));
+              throw Exception("ProfileRepository尚未初始化，稍后重试");
+            }
+            
+            // 安全地获取activeProfile
+            ProfileEntity? activeProfile;
+            try {
+              activeProfile = await ref.read(activeProfileProvider.future);
+            } catch (e) {
+              loggy.debug("获取activeProfile失败: $e");
+            }
+            
+            // 安全地获取markNewProfileActive设置
+            bool markAsActive = true;
+            try {
+              if (activeProfile != null) {
+                final prefs = await ref.read(sharedPreferencesProvider.future);
+                markAsActive = prefs.getBool("mark_new_profile_active") ?? true;
+              }
+            } catch (e) {
+              loggy.debug("获取markNewProfileActive设置失败: $e");
+              // 默认使用true
+            }
+            
+            final TaskEither<ProfileFailure, Unit> task;
+            
+            if (LinkParser.parse(rawInput) case (final link)?) {
+              loggy.debug("添加配置，URL: [${link.url}]");
+              task = repo.addByUrl(
+                link.url,
+                markAsActive: markAsActive,
+                cancelToken: _cancelToken = CancelToken(),
+              );
+            } else if (LinkParser.protocol(rawInput) case (final parsed)?) {
+              loggy.debug("添加配置，内容");
+              var name = parsed.name;
+              var oldItem = await repo.getByName(name);
+              if (name == "Hiddify WARP" && oldItem != null) {
+                repo.deleteById(oldItem.id).run();
+              }
+              while (await repo.getByName(name) != null) {
+                name += '${randomInt(0, 9).run()}';
+              }
+              task = repo.addByContent(
+                parsed.content,
+                name: name,
+                markAsActive: markAsActive,
+              );
+            } else {
+              loggy.debug("无效内容");
+              throw const ProfileInvalidUrlFailure();
+            }
+            
+            return task.match(
+              (err) {
+                loggy.warning("添加配置失败", err);
+                throw err;
+              },
+              (_) {
+                loggy.info(
+                  "成功添加配置，标记为活跃? [$markAsActive]",
+                );
+                return unit;
+              },
+            ).run();
+          },
+        );
+        
+        // 如果成功或出现无法重试的错误，则跳出循环
+        if (state is AsyncData || state.error is ProfileInvalidUrlFailure) {
+          break;
         }
-        return task.match(
-          (err) {
-            loggy.warning("failed to add profile", err);
-            throw err;
-          },
-          (_) {
-            loggy.info(
-              "successfully added profile, mark as active? [$markAsActive]",
-            );
-            return unit;
-          },
-        ).run();
-      },
-    );
+        
+        // 如果是其他错误，进行重试
+        retryCount++;
+        if (retryCount < maxRetries) {
+          loggy.debug("添加配置失败，将在1秒后重试 (${retryCount}/${maxRetries})");
+          await Future.delayed(Duration(seconds: 1));
+        }
+      } catch (e) {
+        loggy.warning("添加配置时发生异常: $e");
+        retryCount++;
+        if (retryCount < maxRetries) {
+          loggy.debug("将在1秒后重试 (${retryCount}/${maxRetries})");
+          await Future.delayed(Duration(seconds: 1));
+        } else {
+          state = AsyncError(e is ProfileFailure ? e : ProfileUnexpectedFailure(e), StackTrace.current);
+        }
+      }
+    }
   }
 
   Future<void> check4Warp(String rawInput) async {

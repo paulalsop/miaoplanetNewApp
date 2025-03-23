@@ -43,6 +43,13 @@ class AuthService {
     );
   }
 
+  Future<Map<String, dynamic>> tempAccountCreate(String deviceId) async {
+    return await _httpService.postRequest(
+      "/api/v1/guest/temp-account/create",
+      {'device_id': deviceId},
+    );
+  }
+
   Future<Map<String, dynamic>> resetPassword(
       String email, String password, String emailCode) async {
     return await _httpService.postRequest(
@@ -52,6 +59,12 @@ class AuthService {
         "password": password,
         "email_code": emailCode,
       },
+    );
+  }
+
+  Future<Map<String, dynamic>> getSystemConfig() async {
+    return await _httpService.getRequest(
+      "/api/v1/guest/comm/config",
     );
   }
 }
