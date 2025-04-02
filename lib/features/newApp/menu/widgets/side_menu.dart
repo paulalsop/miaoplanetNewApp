@@ -5,6 +5,13 @@ import '../../auth/auth_routes.dart';
 import '../../auth/screens/login_page.dart';
 import '../../auth/services/auth_service.dart';
 import '../../core/routes/app_routes.dart';
+import '../../user/screens/referrer_info_page.dart';
+import '../../user/screens/bsc_address_page.dart';
+import '../../user/screens/reset_password_page.dart';
+import '../../ticket/screens/ticket_list_page.dart';
+import '../../../panel/xboard/services/http_service/user_service.dart';
+import '../../../panel/xboard/models/user_info_model.dart';
+import '../../../panel/xboard/services/http_service/invite_code_service.dart';
 
 /// 侧边栏菜单项数据结构
 class SideMenuItem {
@@ -45,7 +52,8 @@ class SideMenu extends StatefulWidget {
   State<SideMenu> createState() => _SideMenuState();
 }
 
-class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin {
+class _SideMenuState extends State<SideMenu>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
 
@@ -100,25 +108,49 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
   void _initMenuItems() {
     _menuItems = [
       // 临时账号升级选项（仅当用户使用临时账号时显示）
-      // 注意：这个空的SideMenuItem会在build时被动态替换
       SideMenuItem(
-        icon: NewAppAssets.menuInviteIcon, // 使用临时图标，会在build时判断是否显示
-        title: '', // 空标题
-        onTap: () {}, // 空函数
+        icon: NewAppAssets.menuInviteIcon,
+        title: '升级账号',
+        onTap: () {
+          widget.onClose();
+          if (context.mounted) {
+            NewAppRoutes.navigateTo(context, NewAppRoutes.upgradeAccount);
+          }
+        },
       ),
+      // 邀请链接（仅当用户绑定了推荐人时显示）
       SideMenuItem(
         icon: NewAppAssets.menuInviteIcon,
         title: '邀请链接',
         onTap: () {
-          // 处理邀请链接点击
           _handleMenuItemTap('邀请链接');
+        },
+      ),
+      SideMenuItem(
+        icon: NewAppAssets.menuUserIcon,
+        title: '推荐人',
+        onTap: () {
+          _handleReferrerTap();
+        },
+      ),
+      SideMenuItem(
+        icon: NewAppAssets.menuWalletIcon,
+        title: 'BSC地址',
+        onTap: () {
+          _handleBscAddressTap();
+        },
+      ),
+      SideMenuItem(
+        icon: NewAppAssets.orderListIcon,
+        title: '订单列表',
+        onTap: () {
+          _handleMenuItemTap('订单列表');
         },
       ),
       SideMenuItem(
         icon: NewAppAssets.menuUserIcon,
         title: '用户协议',
         onTap: () {
-          // 处理用户协议点击
           _handleMenuItemTap('用户协议');
         },
       ),
@@ -126,7 +158,6 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
         icon: NewAppAssets.menuPrivacyIcon,
         title: '隐私协议',
         onTap: () {
-          // 处理隐私协议点击
           _handleMenuItemTap('隐私协议');
         },
       ),
@@ -134,7 +165,6 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
         icon: NewAppAssets.menuServiceIcon,
         title: '客服咨询',
         onTap: () {
-          // 处理客服咨询点击
           _handleMenuItemTap('客服咨询');
         },
       ),
@@ -142,7 +172,6 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
         icon: NewAppAssets.menuResetPasswordIcon,
         title: '重置密码',
         onTap: () {
-          // 处理重置密码点击
           _handleMenuItemTap('重置密码');
         },
       ),
@@ -150,7 +179,6 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
         icon: NewAppAssets.menuLogoutAccountIcon,
         title: '注销账号',
         onTap: () {
-          // 处理注销账号点击
           _handleMenuItemTap('注销账号');
         },
       ),
@@ -158,15 +186,160 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
   }
 
   // 处理菜单项点击
-  void _handleMenuItemTap(String itemName) {
-    // 关闭菜单后执行操作
+  void _handleMenuItemTap(String menuTitle) {
+    // 首先关闭侧边栏
     widget.onClose();
-    // 这里可以根据实际需求添加具体的跳转逻辑
-    debugPrint('点击了菜单项: $itemName');
 
-    // 处理邀请链接点击
-    if (itemName == '邀请链接' && context.mounted) {
+    // 菜单项点击逻辑
+    switch (menuTitle) {
+      case '邀请链接':
+        _showInvitationPage();
+        break;
+      case '订单列表':
+        _navigateToOrderList();
+        break;
+      case 'BSC地址':
+        _showBscAddressPage();
+        break;
+      case '用户协议':
+        _showFeatureInDevelopment('用户协议');
+        break;
+      case '隐私协议':
+        _showFeatureInDevelopment('隐私协议');
+        break;
+      case '客服咨询':
+        _showTicketListPage();
+        break;
+      case '重置密码':
+        _showResetPasswordPage();
+        break;
+      case '注销账号':
+        _showFeatureInDevelopment('注销账号');
+        break;
+      default:
+        // 显示功能开发中提示
+        _showFeatureInDevelopment(menuTitle);
+    }
+  }
+
+  // 显示推荐人信息页面
+  void _showReferrerInfoPage() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '关闭推荐人信息',
+      barrierColor: Colors.black.withOpacity(0.75),
+      pageBuilder: (context, animation1, animation2) =>
+          const ReferrerInfoPage(),
+      transitionBuilder: (context, animation1, animation2, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation1,
+          curve: Curves.easeInOut,
+        );
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+    );
+  }
+
+  // 处理推荐人点击
+  void _handleReferrerTap() {
+    // 首先关闭侧边栏
+    widget.onClose();
+
+    // 打开推荐人信息页面
+    _showReferrerInfoPage();
+  }
+
+  // 显示邀请链接页面
+  void _showInvitationPage() {
+    if (context.mounted) {
       NewAppRoutes.navigateTo(context, NewAppRoutes.invitationCode);
+    }
+  }
+
+  // 导航到订单列表
+  void _navigateToOrderList() {
+    if (context.mounted) {
+      NewAppRoutes.navigateTo(context, NewAppRoutes.orderList);
+    }
+  }
+
+  // 显示BSC地址页面
+  void _showBscAddressPage() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '关闭BSC地址',
+      barrierColor: Colors.black.withOpacity(0.75),
+      pageBuilder: (context, animation1, animation2) => const BscAddressPage(),
+      transitionBuilder: (context, animation1, animation2, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation1,
+          curve: Curves.easeInOut,
+        );
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+    );
+  }
+
+  // 处理BSC地址点击
+  void _handleBscAddressTap() {
+    // 首先关闭侧边栏
+    widget.onClose();
+
+    // 打开BSC地址页面
+    _showBscAddressPage();
+  }
+
+  // 显示重置密码页面
+  void _showResetPasswordPage() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '关闭重置密码',
+      barrierColor: Colors.black.withOpacity(0.75),
+      pageBuilder: (context, animation1, animation2) =>
+          const ResetPasswordPage(),
+      transitionBuilder: (context, animation1, animation2, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation1,
+          curve: Curves.easeInOut,
+        );
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.9, end: 1.0).animate(curvedAnimation),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 250),
+    );
+  }
+
+  // 显示功能开发中提示
+  void _showFeatureInDevelopment(String featureName) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$featureName 功能开发中，敬请期待！'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -215,7 +388,8 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
                 // 5. 导航到登录页
                 debugPrint('【侧边栏】5. 准备导航到登录页');
                 if (context.mounted) {
-                  NewAppRoutes.navigateAndRemoveUntil(context, NewAppRoutes.login);
+                  NewAppRoutes.navigateAndRemoveUntil(
+                      context, NewAppRoutes.login);
                   debugPrint('【侧边栏】5. 导航命令已发送');
                 }
               } catch (e) {
@@ -237,6 +411,16 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
   Future<bool> _isTempAccount() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('is_temp_account') ?? false;
+  }
+
+  // 显示工单列表页面
+  void _showTicketListPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TicketListPage(),
+      ),
+    );
   }
 
   @override
@@ -339,14 +523,14 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
             _buildUserInfoSection(),
 
             // 分割线
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Image.asset(
-                NewAppAssets.menuSideLine,
-                width: double.infinity,
-                height: 1,
-              ),
-            ),
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 20),
+            //   child: Image.asset(
+            //     NewAppAssets.menuSideLine,
+            //     width: double.infinity,
+            //     height: 1,
+            //   ),
+            // ),
             const SizedBox(height: 20),
 
             // 菜单项列表
@@ -403,7 +587,7 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
 
                 // 用户ID
                 Text(
-                  'ID: ${widget.userId}',
+                  '${widget.userId}',
                   style: TextStyle(
                     color: Colors.grey[300],
                     fontSize: 14,
@@ -419,47 +603,127 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
 
   // 构建菜单项列表
   Widget _buildMenuItems() {
-    return FutureBuilder<bool>(
-      future: _isTempAccount(),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _getUserStatus(),
       builder: (context, snapshot) {
         List<Widget> menuWidgets = [];
-        
+
         // 如果是临时账号，显示升级选项
-        if (snapshot.hasData && snapshot.data == true) {
+        if (snapshot.hasData && snapshot.data?['isTemp'] == true) {
           menuWidgets.add(
             _buildMenuItem(
-              icon: NewAppAssets.menuInviteIcon, // 使用临时图标，应替换为升级账号图标
+              icon: NewAppAssets.menuInviteIcon,
               title: '升级账号',
               isHighlighted: true,
               onTap: () {
                 widget.onClose();
-                // 导航到账号升级页面
                 if (context.mounted) {
                   NewAppRoutes.navigateTo(context, NewAppRoutes.upgradeAccount);
                 }
               },
             ),
           );
-          
-          // 添加分隔线
-          menuWidgets.add(const Divider(color: Colors.white24));
         }
-        
-        // 添加其他菜单项，跳过第一个（临时账号占位符）
-        for (int i = 1; i < _menuItems.length; i++) {
-          final item = _menuItems[i];
+
+        // 只有当用户有推荐人时才显示邀请链接菜单项
+        if (snapshot.hasData && snapshot.data?['hasInviter'] == true) {
           menuWidgets.add(
             _buildMenuItem(
-              icon: item.icon,
-              title: item.title,
-              onTap: item.onTap,
+              icon: NewAppAssets.menuInviteIcon,
+              title: '邀请链接',
+              onTap: () {
+                _handleMenuItemTap('邀请链接');
+              },
             ),
           );
         }
-        
+
+        // 添加其他固定菜单项
+        menuWidgets.addAll([
+          _buildMenuItem(
+            icon: NewAppAssets.menuUserIcon,
+            title: '推荐人',
+            onTap: () {
+              _handleReferrerTap();
+            },
+          ),
+          _buildMenuItem(
+            icon: NewAppAssets.menuWalletIcon,
+            title: 'BSC地址',
+            onTap: () {
+              _handleBscAddressTap();
+            },
+          ),
+          _buildMenuItem(
+            icon: NewAppAssets.orderListIcon,
+            title: '订单列表',
+            onTap: () {
+              _handleMenuItemTap('订单列表');
+            },
+          ),
+          _buildMenuItem(
+            icon: NewAppAssets.menuUserIcon,
+            title: '用户协议',
+            onTap: () {
+              _handleMenuItemTap('用户协议');
+            },
+          ),
+          _buildMenuItem(
+            icon: NewAppAssets.menuPrivacyIcon,
+            title: '隐私协议',
+            onTap: () {
+              _handleMenuItemTap('隐私协议');
+            },
+          ),
+          _buildMenuItem(
+            icon: NewAppAssets.menuServiceIcon,
+            title: '客服咨询',
+            onTap: () {
+              _handleMenuItemTap('客服咨询');
+            },
+          ),
+          _buildMenuItem(
+            icon: NewAppAssets.menuResetPasswordIcon,
+            title: '重置密码',
+            onTap: () {
+              _handleMenuItemTap('重置密码');
+            },
+          ),
+          _buildMenuItem(
+            icon: NewAppAssets.menuLogoutAccountIcon,
+            title: '注销账号',
+            onTap: () {
+              _handleMenuItemTap('注销账号');
+            },
+          ),
+        ]);
+
         return Column(children: menuWidgets);
       },
     );
+  }
+
+  // 获取用户状态（包括临时账号状态和推荐人状态）
+  Future<Map<String, dynamic>> _getUserStatus() async {
+    try {
+      final token = AuthService.instance.token;
+      if (token == null) {
+        return {'hasInviter': false, 'isTemp': false};
+      }
+
+      // 获取用户信息（包含临时账号状态）
+      final userInfo = await UserService().fetchUserInfo(token);
+      // 获取推荐人状态
+      final inviteStatus = await InviteCodeService().getInviteStatus(token);
+
+      return {
+        'isTemp': userInfo?.isTemp ?? false,
+        'hasInviter': inviteStatus['hasInviter'] ?? false,
+      };
+    } catch (e) {
+      debugPrint('获取用户状态失败: $e');
+      return {'hasInviter': false, 'isTemp': false};
+    }
   }
 
   // 构建单个菜单项
@@ -479,20 +743,27 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
             vertical: 12,
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                icon,
+              SizedBox(
                 width: 24,
                 height: 24,
-                color: isHighlighted ? Colors.orange : Colors.white,
+                child: Image.asset(
+                  icon,
+                  color: isHighlighted ? Colors.orange : Colors.white,
+                ),
               ),
               const SizedBox(width: 16),
-              Text(
-                title,
-                style: TextStyle(
-                  color: isHighlighted ? Colors.orange : Colors.white,
-                  fontSize: 16,
-                  fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: isHighlighted ? Colors.orange : Colors.white,
+                    fontSize: 16,
+                    fontWeight:
+                        isHighlighted ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -507,7 +778,7 @@ class _SideMenuState extends State<SideMenu> with SingleTickerProviderStateMixin
     return GestureDetector(
       onTap: _handleLogout,
       child: Container(
-        width: double.infinity,
+        width: 80,
         height: 45,
         margin: const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
         decoration: BoxDecoration(

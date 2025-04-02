@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/membership_model.dart';
+import '../models/membership_type.dart';
 
 /// 会员类型切换标签组件
 class MembershipTypeTabs extends StatelessWidget {
@@ -18,36 +18,20 @@ class MembershipTypeTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 85),
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFF3C3C3C),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 普通会员标签
           _buildTab(
-            context,
             '会员',
             selectedType == MembershipType.ordinary,
             () => onTypeChanged(MembershipType.ordinary),
           ),
-
-          const SizedBox(width: 10),
-
-          // 中间分隔点
-          const Text(
-            '·',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          // 股东会员标签
           _buildTab(
-            context,
             '股东',
             selectedType == MembershipType.shareholder,
             () => onTypeChanged(MembershipType.shareholder),
@@ -58,22 +42,26 @@ class MembershipTypeTabs extends StatelessWidget {
   }
 
   /// 构建标签
-  Widget _buildTab(
-    BuildContext context,
-    String text,
-    bool isSelected,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          decoration: isSelected ? TextDecoration.underline : TextDecoration.none,
-          decorationThickness: 2,
+  Widget _buildTab(String text, bool isSelected, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color:
+                isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Center(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white.withOpacity(isSelected ? 1 : 0.5),
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+              ),
+            ),
+          ),
         ),
       ),
     );

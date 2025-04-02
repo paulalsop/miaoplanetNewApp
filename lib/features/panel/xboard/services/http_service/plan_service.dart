@@ -2,7 +2,6 @@
 import 'package:hiddify/features/panel/xboard/models/plan_model.dart';
 import 'package:hiddify/features/panel/xboard/services/http_service/http_service.dart';
 
-
 class PlanService {
   final HttpService _httpService = HttpService();
 

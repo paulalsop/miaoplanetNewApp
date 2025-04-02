@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../panel/xboard/utils/storage/token_storage.dart' as token_storage;
+import '../../../panel/xboard/utils/storage/token_storage.dart'
+    as token_storage;
 import '../../../panel/xboard/services/http_service/user_service.dart';
-import '../../../panel/xboard/services/http_service/auth_service.dart' as xboard_auth;
+import '../../../panel/xboard/services/http_service/auth_service.dart'
+    as xboard_auth;
 import '../../../panel/xboard/services/http_service/http_service.dart';
 
 /// 认证服务 - 管理登录状态和token
@@ -82,7 +84,7 @@ class AuthService {
       // 使用UserService验证token
       final userService = UserService();
       final isValid = await userService.validateToken(_token!);
-      
+
       debugPrint('【AuthService】token验证完成，结果: ${isValid ? '有效' : '无效'}');
       return isValid;
     } catch (e) {
@@ -94,23 +96,24 @@ class AuthService {
   /// 登录 (设置token并返回成功标志)
   Future<bool> login(String email, String password) async {
     if (email.isEmpty || password.isEmpty) return false;
-    
+
     try {
       debugPrint('【AuthService】开始登录流程');
-      
+
       // 使用xboard的AuthService进行登录
       final authService = xboard_auth.AuthService();
       final result = await authService.login(email, password);
-      
+
       if (result['status'] == 'success' && result.containsKey('data')) {
         // 从响应中提取auth_data
         final data = result['data'] as Map<String, dynamic>;
-        
+
         // 获取auth_data作为认证令牌
         final authData = data['auth_data'] as String;
-        
+
         // 存储auth_data作为token
         await setToken(authData);
+        await token_storage.storeClientToken(data['token'] as String);
         debugPrint('【AuthService】登录成功，auth_data已保存');
         return true;
       } else {
@@ -136,7 +139,7 @@ class AuthService {
       // 使用xboard的AuthService获取系统配置
       final authService = xboard_auth.AuthService();
       final result = await authService.getSystemConfig();
-      
+
       if (result['status'] == 'success' && result.containsKey('data')) {
         return result['data'] as Map<String, dynamic>;
       } else {
@@ -152,13 +155,13 @@ class AuthService {
   /// 发送邮箱验证码
   Future<bool> sendEmailVerificationCode(String email) async {
     if (email.isEmpty) return false;
-    
+
     try {
       debugPrint('【AuthService】开始发送邮箱验证码');
-      
+
       final authService = xboard_auth.AuthService();
       final result = await authService.sendVerificationCode(email);
-      
+
       if (result['status'] == 'success') {
         debugPrint('【AuthService】邮箱验证码发送成功');
         return true;
@@ -173,37 +176,38 @@ class AuthService {
   }
 
   /// 注册新用户 (增加邮箱验证码参数)
-  Future<bool> register(String username, String password, String inviteCode, {String emailCode = ""}) async {
+  Future<bool> register(String username, String password, String inviteCode,
+      {String emailCode = ""}) async {
     if (username.isEmpty || password.isEmpty) return false;
-    
+
     try {
       debugPrint('【AuthService】开始注册流程');
-      
+
       // 使用xboard的AuthService进行注册
       final authService = xboard_auth.AuthService();
-      
+
       final result = await authService.register(
         username, // 用作email
         password,
         inviteCode,
         emailCode,
       );
-      
+
       if (result['status'] == 'success') {
         debugPrint('【AuthService】注册成功');
-        
+
         // 如果注册后返回了token信息，可以直接登录
-        if (result.containsKey('data') && 
-            result['data'] is Map<String, dynamic> && 
+        if (result.containsKey('data') &&
+            result['data'] is Map<String, dynamic> &&
             (result['data'] as Map<String, dynamic>).containsKey('auth_data')) {
           final data = result['data'] as Map<String, dynamic>;
           final authData = data['auth_data'] as String;
-          
+
           // 存储auth_data作为token
           await setToken(authData);
           debugPrint('【AuthService】注册后自动登录成功');
         }
-        
+
         return true;
       } else {
         debugPrint('【AuthService】注册失败: ${result['message']}');

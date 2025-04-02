@@ -27,7 +27,7 @@ class _AccountUpgradePageState extends State<AccountUpgradePage> {
   Future<void> _loadTempAccountInfo() async {
     final prefs = await SharedPreferences.getInstance();
     final tempEmail = prefs.getString('temp_email');
-    
+
     if (tempEmail != null) {
       setState(() {
         _emailController.text = tempEmail;
@@ -66,18 +66,21 @@ class _AccountUpgradePageState extends State<AccountUpgradePage> {
       if (result != null) {
         // 更新token
         await AuthService.instance.setToken(result);
-        
+
         // 清除临时账号标记
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('temp_email');
         await prefs.remove('temp_password');
         await prefs.remove('temp_expired_at');
         await prefs.setBool('is_temp_account', false);
-        
+
         if (mounted) {
           // 显示成功消息
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('账号升级成功')),
+            const SnackBar(
+              content: Text('账号升级成功，您现在可以使用新的邮箱和密码登录'),
+              duration: Duration(seconds: 3),
+            ),
           );
           // 返回主页
           NewAppRoutes.navigateAndRemoveUntil(context, NewAppRoutes.home);
@@ -86,7 +89,57 @@ class _AccountUpgradePageState extends State<AccountUpgradePage> {
         _showError('账号升级失败，请稍后再试');
       }
     } catch (e) {
-      _showError('升级过程中发生错误: $e');
+      // 尝试从错误信息中提取有用的信息
+      String errorMessage = '账号升级失败，请稍后再试';
+
+      try {
+        String errorString = e.toString();
+
+        // 检查是否包含JSON格式的错误信息
+        if (errorString.contains('"status":"fail"')) {
+          // 使用正则表达式提取message字段
+          RegExp messageRegex = RegExp(r'"message":"([^"]+)"');
+          final match = messageRegex.firstMatch(errorString);
+          if (match != null && match.groupCount >= 1) {
+            String extractedMessage = match.group(1) ?? '';
+            if (extractedMessage.isNotEmpty) {
+              errorMessage = extractedMessage;
+            }
+          }
+        }
+
+        // 针对服务器返回的具体错误进行处理
+        if (errorString.contains('user does not exist') ||
+            errorString.contains('The user does not exist')) {
+          errorMessage = '用户不存在';
+        } else if (errorString.contains('当前账号不是临时账号')) {
+          errorMessage = '当前账号不是临时账号，无需转换';
+        } else if (errorString.contains('请使用真实的邮箱地址')) {
+          errorMessage = '请使用真实的邮箱地址';
+        } else if (errorString.contains('账号更新失败')) {
+          errorMessage = '账号更新失败，请稍后重试';
+        } else if (errorString.contains('该邮箱已被使用') ||
+            errorString.contains('email already exists')) {
+          errorMessage = '该邮箱已被注册，您可以直接使用该邮箱登录系统';
+        } else if (errorString.contains('密码格式不正确')) {
+          errorMessage = '密码格式不正确，请至少包含8个字符';
+        }
+
+        // 检查是否为HTTP状态码错误
+        if (errorString.contains('failed: 400')) {
+          // 这里保留提取出的errorMessage，因为前面已经尝试解析了
+        } else if (errorString.contains('failed: 500')) {
+          errorMessage = '服务器内部错误，请稍后重试';
+        } else if (errorString.contains('failed: 401')) {
+          errorMessage = '授权已过期，请重新登录';
+        } else if (errorString.contains('failed: 403')) {
+          errorMessage = '没有权限执行此操作';
+        }
+      } catch (_) {
+        // 如果解析失败，使用默认错误信息
+      }
+
+      _showError(errorMessage);
     } finally {
       if (mounted) {
         setState(() {
@@ -99,7 +152,11 @@ class _AccountUpgradePageState extends State<AccountUpgradePage> {
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3),
+        backgroundColor: Colors.red,
+      ),
     );
   }
 
@@ -179,4 +236,4 @@ class _AccountUpgradePageState extends State<AccountUpgradePage> {
       ),
     );
   }
-} 
+}

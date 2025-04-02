@@ -1,28 +1,42 @@
-/// 服务器信息模型类
+import 'package:flutter/material.dart';
+
+/// 服务器状态
+enum ServerStatus {
+  /// 可用
+  available,
+
+  /// 不可用
+  unavailable,
+
+  /// 已连接
+  connected,
+}
+
+/// 服务器模型
 class ServerModel {
+  /// 构造函数
+  ServerModel({
+    required this.id,
+    required this.name,
+    required this.ping,
+    required this.status,
+    this.isSelected = false,
+  });
+
   /// 服务器ID
   final String id;
 
   /// 服务器名称
   final String name;
 
-  /// 服务器延迟(毫秒)
+  /// 延迟值(毫秒)
   final int ping;
 
   /// 服务器状态
   final ServerStatus status;
 
-  /// 是否为当前选中的服务器
+  /// 是否被选中
   final bool isSelected;
-
-  /// 构造函数
-  ServerModel({
-    required this.id,
-    required this.name,
-    required this.ping,
-    this.status = ServerStatus.available,
-    this.isSelected = false,
-  });
 
   /// 创建一个此对象的副本，但更新了指定字段
   ServerModel copyWith({
@@ -40,16 +54,30 @@ class ServerModel {
       isSelected: isSelected ?? this.isSelected,
     );
   }
-}
 
-/// 服务器状态枚举
-enum ServerStatus {
-  /// 可用
-  available,
+  /// 获取延迟显示文本
+  String get pingText {
+    if (ping == 0) {
+      return "-"; // 未测试
+    } else if (ping >= 65000) {
+      return "×"; // 不可用，显示为"×"
+    } else {
+      return "${ping}ms"; // 显示具体延迟值
+    }
+  }
 
-  /// 已连接
-  connected,
-
-  /// 不可用
-  unavailable,
+  /// 获取延迟的颜色
+  Color getDelayColor(BuildContext context) {
+    if (ping == 0) {
+      return Colors.grey; // 未测试
+    } else if (ping >= 65000) {
+      return Colors.red; // 不可用
+    } else if (ping < 800) {
+      return const Color(0xFF13C23F); // 良好，使用绿色
+    } else if (ping < 1500) {
+      return Colors.orange; // 中等
+    } else {
+      return Colors.red; // 较差
+    }
+  }
 }

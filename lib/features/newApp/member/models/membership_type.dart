@@ -1,0 +1,4 @@
+enum MembershipType {
+  ordinary,
+  shareholder,
+}

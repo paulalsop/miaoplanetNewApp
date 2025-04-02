@@ -1,41 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../core/constants/app_assets.dart';
-import '../models/membership_model.dart';
+import '../models/membership_type.dart';
 import '../widgets/membership_header.dart';
 import '../widgets/membership_plan_item.dart';
 import '../widgets/membership_type_tabs.dart';
 import '../widgets/subscription_button.dart';
+import '../../../panel/xboard/models/plan_model.dart';
+import '../../../panel/xboard/services/http_service/plan_service.dart';
+import '../../../panel/xboard/services/http_service/order_service.dart';
+import '../../../panel/xboard/utils/storage/token_storage.dart';
+import '../../order/screens/order_detail_page.dart';
+import '../../order/models/order_status.dart';
+import '../../order/screens/order_list_page.dart';
 
 /// 会员页面
-class MembershipPage extends StatefulWidget {
+class MembershipPage extends ConsumerStatefulWidget {
   /// 构造函数
   const MembershipPage({
     super.key,
-    this.onClose,
-    this.initialType = MembershipType.ordinary,
+    required this.initialType,
+    required this.onClose,
   });
-
-  /// 关闭回调
-  final VoidCallback? onClose;
 
   /// 初始会员类型
   final MembershipType initialType;
 
+  /// 关闭回调
+  final VoidCallback onClose;
+
   @override
-  State<MembershipPage> createState() => _MembershipPageState();
+  ConsumerState<MembershipPage> createState() => _MembershipPageState();
 }
 
-class _MembershipPageState extends State<MembershipPage> {
-  /// 当前选中的会员类型
+class _MembershipPageState extends ConsumerState<MembershipPage> {
   late MembershipType _selectedType;
+  List<Plan>? _plans;
+  Plan? _selectedPlan;
+  String? _selectedPeriod;
+  bool _isLoading = true;
+  String? _error;
 
-  /// 普通会员选中的套餐ID
-  String _selectedOrdinaryPlanId = ordinaryMembershipPlans.first.id;
+  final _planService = PlanService();
+  final _orderService = OrderService();
 
   @override
   void initState() {
     super.initState();
     _selectedType = widget.initialType;
+    _selectedPlan = _getDefaultPlan();
+    _selectedPeriod = 'month_price'; // 默认选择月付
+    _loadPlans();
+  }
+
+  Future<void> _loadPlans() async {
+    try {
+      setState(() => _isLoading = true);
+      final token = await getToken();
+      if (token == null) {
+        setState(() {
+          _error = "请先登录";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final plans = await _planService.fetchPlanData(token);
+      setState(() {
+        _plans = plans;
+        _selectedPlan = _getDefaultPlan();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = "获取套餐失败: $e";
+        _isLoading = false;
+      });
+    }
+  }
+
+  Plan? _getDefaultPlan() {
+    if (_plans == null || _plans!.isEmpty) return null;
+    return _plans!.firstWhere(
+      (plan) => _selectedType == MembershipType.ordinary
+          ? plan.id == 1
+          : plan.id == 2,
+      orElse: () => _plans!.first,
+    );
   }
 
   /// 获取当前会员类型对应的背景图片
@@ -48,45 +99,167 @@ class _MembershipPageState extends State<MembershipPage> {
       ? NewAppAssets.ordinaryMemberQuitIcon
       : NewAppAssets.shareholderMemberQuitIcon;
 
+  /// 获取当前会员类型对应的货币符号
+  String get _currencySymbol =>
+      _selectedType == MembershipType.ordinary ? '¥' : 'MIAO';
+
   /// 获取当前会员类型对应的套餐列表
-  List<MembershipPlan> get _currentPlans =>
-      _selectedType == MembershipType.ordinary
-          ? ordinaryMembershipPlans
-          : shareholderMembershipPlans;
+  List<Plan> get _currentPlans =>
+      _plans
+          ?.where((plan) => _selectedType == MembershipType.ordinary
+              ? plan.id == 1
+              : plan.id == 2)
+          .toList() ??
+      [];
 
   /// 处理会员类型变化
   void _handleTypeChanged(MembershipType type) {
     setState(() {
       _selectedType = type;
+      _selectedPlan = _getDefaultPlan();
     });
   }
 
   /// 处理普通会员套餐选择
-  void _handleOrdinaryPlanSelected(String planId) {
+  void _handlePlanSelected(Plan plan) {
     setState(() {
-      _selectedOrdinaryPlanId = planId;
+      _selectedPlan = plan;
+    });
+  }
+
+  /// 处理周期选择
+  void _handlePeriodSelected(String period) {
+    setState(() {
+      _selectedPeriod = period;
     });
   }
 
   /// 处理订阅提交
   void _handleSubscribe() {
-    // 获取选中的套餐
-    final selectedPlan = _selectedType == MembershipType.ordinary
-        ? ordinaryMembershipPlans
-            .firstWhere((plan) => plan.id == _selectedOrdinaryPlanId)
-        : shareholderMembershipPlans.first;
+    _handleSubscribeAsync();
+  }
 
-    // 显示订阅成功消息
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-            '成功订阅 ${_selectedType == MembershipType.ordinary ? "普通会员" : "股东会员"} - ${selectedPlan.name}'),
-      ),
-    );
+  Future<void> _handleSubscribeAsync() async {
+    if (_selectedPlan == null || _selectedPeriod == null) return;
 
-    // 关闭页面
-    if (widget.onClose != null) {
-      widget.onClose!();
+    try {
+      final token = await getToken();
+      if (token == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先登录')),
+        );
+        return;
+      }
+
+      // 发送请求
+      final result = await _orderService.createOrder(
+        token,
+        _selectedPlan!.id,
+        _selectedPeriod!,
+      );
+
+      if (!mounted) return;
+
+      if (result['status'] == 'success') {
+        final orderId = result['data'] as String;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OrderDetailPage(
+              orderId: orderId,
+              initialStatus: OrderDetailStatus.pending,
+              onClose: () => Navigator.pop(context),
+            ),
+          ),
+        );
+      } else {
+        String errorMessage = result['message'] as String? ?? '创建订单失败';
+
+        // 检查是否是未支付订单的错误
+        if (errorMessage.contains('您有未付款') ||
+            errorMessage.contains('未付款') ||
+            errorMessage.contains('未支付') ||
+            errorMessage.contains('开通中') ||
+            errorMessage.contains('未付费')) {
+          // 显示提示对话框
+          final shouldGoToOrders = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('提示'),
+              content: const Text('您有未支付的订单，是否查看订单列表？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('查看订单'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldGoToOrders == true) {
+            if (!mounted) return;
+            // 使用 MaterialPageRoute 导航到 OrderListPage
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const OrderListPage(),
+              ),
+            );
+          }
+        } else {
+          // 其他错误直接显示错误信息
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMessage)),
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      final shouldGoToOrders = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('提示'),
+          content: const Text('您有未支付的订单，是否查看订单列表？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('查看订单'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldGoToOrders == true) {
+        if (!mounted) return;
+        // 使用 MaterialPageRoute 导航到 OrderListPage
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OrderListPage(),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 格式化价格显示
+  String _formatPrice(double? price) {
+    if (price == null) return '0 $_currencySymbol';
+
+    // 如果是普通会员，显示小数点后两位；如果是股东，显示整数
+    if (_selectedType == MembershipType.ordinary) {
+      return '${price.toStringAsFixed(2)} $_currencySymbol';
+    } else {
+      return '${price.toInt()} $_currencySymbol';
     }
   }
 
@@ -142,16 +315,24 @@ class _MembershipPageState extends State<MembershipPage> {
               // 会员信息头部
               MembershipHeader(membershipType: _selectedType),
 
-              // 套餐列表
-              Expanded(
-                child: _selectedType == MembershipType.ordinary
-                    ? _buildOrdinaryPlansList() // 普通会员套餐列表
-                    : _buildShareholderPlansList(), // 股东会员套餐列表
-              ),
+              if (_isLoading)
+                const Expanded(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_error != null)
+                Expanded(
+                  child: Center(
+                      child: Text(_error!,
+                          style: const TextStyle(color: Colors.white))),
+                )
+              else
+                Expanded(
+                  child: _buildPlansList(),
+                ),
 
               // 订阅按钮
               SubscriptionButton(
-                onTap: _handleSubscribe,
+                onTap: _selectedPlan != null ? _handleSubscribe : null,
                 membershipType: _selectedType,
               ),
             ],
@@ -162,39 +343,26 @@ class _MembershipPageState extends State<MembershipPage> {
   }
 
   /// 构建普通会员套餐列表
-  Widget _buildOrdinaryPlansList() {
+  Widget _buildPlansList() {
+    final plans = _currentPlans;
+    if (plans.isEmpty) {
+      return const Center(
+        child: Text('暂无可用套餐', style: TextStyle(color: Colors.white)),
+      );
+    }
+
     return ListView.builder(
-      itemCount: ordinaryMembershipPlans.length,
+      itemCount: plans.length,
       padding: const EdgeInsets.only(top: 8),
       itemBuilder: (context, index) {
-        final plan = ordinaryMembershipPlans[index];
-        final isSelected = plan.id == _selectedOrdinaryPlanId;
-
+        final plan = plans[index];
         return MembershipPlanItem(
           plan: plan,
-          isSelected: isSelected,
-          membershipType: MembershipType.ordinary,
-          onTap: () => _handleOrdinaryPlanSelected(plan.id),
+          selectedPeriod: _selectedPeriod,
+          membershipType: _selectedType,
+          onPeriodSelected: _handlePeriodSelected,
         );
       },
-    );
-  }
-
-  /// 构建股东会员套餐列表
-  Widget _buildShareholderPlansList() {
-    // 股东会员套餐展示时增加额外间隔，让布局更加合理
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      children: [
-        const SizedBox(height: 16),
-        // 股东会员只有一个套餐，放在中央位置展示
-        MembershipPlanItem(
-          plan: shareholderMembershipPlans.first,
-          isSelected: true,
-          membershipType: MembershipType.shareholder,
-          onTap: () {}, // 股东会员只有一个套餐，无需切换
-        ),
-      ],
     );
   }
 }

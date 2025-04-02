@@ -93,13 +93,15 @@ class NewAppAssets {
   static const String menuAvatar = menuPrefix + 'pic_menu_avatar.png';
   static const String menuSideLine = menuPrefix + 'line_side_line.png';
   static const String menuInviteIcon = menuPrefix + 'ic_side_invite.png';
-  static const String menuUserIcon = menuPrefix + 'ic_side_user.png';
+  static const String menuUserIcon = menuPrefix + 'ic_side_Recommend.png';
   static const String menuPrivacyIcon = menuPrefix + 'ic_side_Settings.png';
   static const String menuServiceIcon = menuPrefix + 'ic_side_service.png';
   static const String menuResetPasswordIcon =
       menuPrefix + 'ic_side_Refresh.png';
   static const String menuLogoutAccountIcon = menuPrefix + 'ic_side_Logout.png';
   static const String menuQuitButtonBg = menuPrefix + 'but_side_quit.png';
+  // BSC钱包地址图标 (暂时使用刷新图标，但保留此常量以便后续更新真实图标)
+  static const String menuWalletIcon = menuPrefix + 'ic_side_BSC.png';
 
   // 服务器选择资源
   static const String serverPrefix = 'assets/images/newPageMaterials/server/';
@@ -167,4 +169,55 @@ class NewAppAssets {
       invitationCodePrefix + 'ic_card_quit.png';
   static const String invitationLineIcon =
       invitationCodePrefix + 'line_card_line.png';
+
+  // 订单页面资源
+  static const String orderBackground =
+      'assets/images/newPageMaterials/order/bg_await_Order.png';
+  static const String orderCloseIcon =
+      'assets/images/newPageMaterials/order/ic_await_quit.png';
+  static const String orderProductBg =
+      'assets/images/newPageMaterials/order/bg_await_product.png';
+  static const String payMiaoIcon =
+      'assets/images/newPageMaterials/order/pic_pay_miao.png';
+  static const String payUsdtIcon =
+      'assets/images/newPageMaterials/order/pic_pay_usdt.png';
+  static const String paySelectedIcon =
+      'assets/images/newPageMaterials/order/ic_pay_Select.png';
+  static const String payUnselectedIcon =
+      'assets/images/newPageMaterials/order/ic_pay_normal.png';
+  static const String startButton =
+      'assets/images/newPageMaterials/order/btn_await_Start.png';
+
+  // 订单列表页面资源
+  static const String orderListPrefix =
+      'assets/images/newPageMaterials/order/orderlist/';
+  static const String orderListBackground = orderListPrefix + 'bg_Order_bg.png';
+  static const String orderPaginationBg = orderListPrefix + 'bg_order_pag.png';
+  static const String orderButtonBg = orderListPrefix + 'btn_bg_order.png';
+  static const String orderLine = orderListPrefix + 'Line_order_line.png';
+
+  // 注意：这些图标可能需要从其他目录复制过来
+  static const String orderPreviousIcon = serverPrefix + 'ic_pag_Previous.png';
+  static const String orderNextIcon = serverPrefix + 'ic_pag_Next page.png';
+
+  // 订单状态资源
+  static const String orderCompletedBg =
+      'assets/images/newPageMaterials/order/paysuccess/bg_zfcg_bg.png';
+  static const String orderCancelledBg =
+      'assets/images/newPageMaterials/order/paycancel/bg_completed_order.png';
+  static const String orderCompletedIcon =
+      'assets/images/newPageMaterials/order/paysuccess/pic_zfcg_miao.png';
+  static const String orderCancelledIcon =
+      'assets/images/newPageMaterials/order/paycancel/pic_Cancelled_miao.png';
+  static const String orderLookButton =
+      'assets/images/newPageMaterials/order/paysuccess/btn_bg_look.png';
+  static const String orderBackButton =
+      'assets/images/newPageMaterials/order/paysuccess/btn_bg_back.png';
+
+  // 支付对话框资源
+  static const String orderPayDialogBg =
+      'assets/images/newPageMaterials/order/paydialog/bg_zfcg_bg.png';
+
+  // 菜单图标
+  static const String orderListIcon = menuPrefix + 'ic_side_order.png';
 }

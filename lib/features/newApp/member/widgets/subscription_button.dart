@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_assets.dart';
-import '../models/membership_model.dart';
+import '../models/membership_type.dart';
 
 /// 订阅提交按钮组件
 class SubscriptionButton extends StatelessWidget {
@@ -12,35 +12,41 @@ class SubscriptionButton extends StatelessWidget {
   });
 
   /// 点击回调
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// 会员类型
   final MembershipType membershipType;
 
   @override
   Widget build(BuildContext context) {
-    final String backgroundImage = membershipType == MembershipType.ordinary ? NewAppAssets.ordinaryMemberStartButton : NewAppAssets.shareholderMemberStartButton;
+    final backgroundImage = membershipType == MembershipType.ordinary
+        ? NewAppAssets.ordinaryMemberStartButton
+        : NewAppAssets.shareholderMemberStartButton;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 60,
-        margin: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(backgroundImage),
-            fit: BoxFit.cover,
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 50,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(backgroundImage),
+              fit: BoxFit.cover,
+            ),
+            borderRadius: BorderRadius.circular(25),
           ),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        alignment: Alignment.center,
-        child: const Text(
-          'Start Subscriptions',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+          child: Center(
+            child: Text(
+              '立即开通',
+              style: TextStyle(
+                color: membershipType == MembershipType.ordinary
+                    ? Colors.white
+                    : Colors.amber,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
       ),

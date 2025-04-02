@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/routes/app_routes.dart';
 import '../../core/utils/size_utils.dart';
@@ -9,11 +10,13 @@ import '../widgets/connection_status.dart';
 import '../widgets/space_cat_animation.dart';
 import '../widgets/server_info_button.dart';
 import '../../member/member_routes.dart';
-import '../../member/models/membership_model.dart';
 import '../../shared/layouts/app_scaffold.dart';
 import '../../menu/services/side_menu_service.dart';
 import '../../server/server_routes.dart' as server_routes;
 import '../../server/models/server_model.dart';
+import '../../utils/app_update_service.dart';
+import '../../auth/services/auth_service.dart';
+import 'package:hiddify/features/panel/xboard/services/http_service/user_service.dart';
 
 // 系统底层连接相关
 import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
@@ -33,6 +36,15 @@ class _HomePageState extends ConsumerState<HomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
+  final AppUpdateService _updateService = AppUpdateService();
+  final UserService _userService = UserService();
+
+  // 用户信息相关
+  String _userEmail = '';
+  int _planId = 0; // 0表示未知, 1表示普通会员, 2表示股东会员
+  DateTime? _expiryDate;
+  bool _isSubscriptionExpired = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -49,6 +61,83 @@ class _HomePageState extends ConsumerState<HomePage>
       CurvedAnimation(
         parent: _animationController,
         curve: Curves.easeInOut,
+      ),
+    );
+
+    // 延迟检查更新，等待页面完全加载
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates();
+      _fetchUserInfo();
+    });
+  }
+
+  /// 获取用户信息
+  Future<void> _fetchUserInfo() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final token = AuthService.instance.token;
+      if (token == null) {
+        debugPrint('获取token失败，无法获取用户信息');
+        return;
+      }
+
+      final userInfo = await _userService.fetchUserInfo(token);
+      if (userInfo != null) {
+        setState(() {
+          _userEmail = userInfo.email ?? '';
+          _planId = userInfo.planId ?? 1;
+
+          if (userInfo.expiredAt != null) {
+            _expiryDate =
+                DateTime.fromMillisecondsSinceEpoch(userInfo.expiredAt! * 1000);
+
+            // 检查是否过期
+            final now = DateTime.now();
+            _isSubscriptionExpired = now.isAfter(_expiryDate!);
+          }
+
+          _isLoading = false;
+        });
+
+        // 如果已过期，显示提示
+        if (_isSubscriptionExpired && mounted) {
+          _showSubscriptionExpiredDialog();
+        }
+      }
+    } catch (e) {
+      debugPrint('获取用户信息失败: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// 显示订阅已过期对话框
+  void _showSubscriptionExpiredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('会员订阅已过期'),
+        content: const Text('您的会员订阅已经过期，请续费以继续使用完整功能。'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              MemberRoutes.openMembershipPage(context);
+            },
+            child: const Text('立即续费'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('稍后再说'),
+          ),
+        ],
       ),
     );
   }
@@ -98,7 +187,7 @@ class _HomePageState extends ConsumerState<HomePage>
 
     // 使用AppScaffold作为根布局
     return AppScaffold(
-      userId: '123456789', // 这里应该从用户信息提供者中获取真实的用户ID
+      userId: _userEmail.isNotEmpty ? _userEmail : '加载中...',
       onLogout: () {
         // 处理退出登录逻辑
         ScaffoldMessenger.of(context).showSnackBar(
@@ -127,13 +216,36 @@ class _HomePageState extends ConsumerState<HomePage>
 
                   // 根据连接状态显示不同的标题
                   Text(
-                    isConnected ? 'Connecting Time' : 'Not Connected',
+                    isConnected ? '链接时间' : '未链接',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
+                  // 显示会员到期时间（只有普通会员且有到期时间时显示）
+                  if (_planId == 1 && _expiryDate != null && !_isLoading) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '会员到期: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(_expiryDate!)}',
+                        style: TextStyle(
+                          color: _isSubscriptionExpired
+                              ? Colors.red
+                              : Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
 
                   // 连接时间（仅连接时显示）
                   if (isConnected) ...[
@@ -172,7 +284,7 @@ class _HomePageState extends ConsumerState<HomePage>
 
                   // 服务器选择按钮
                   const SizedBox(height: 30),
-                  _buildServerSelectButton(connectionData.serverName),
+                  // _buildServerSelectButton(connectionData.serverName),
 
                   // 未连接时给更多空间，连接后减少空间以放置太空猫
                   isConnected ? const Spacer() : const Spacer(flex: 2),
@@ -232,9 +344,7 @@ class _HomePageState extends ConsumerState<HomePage>
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              isConnected
-                                  ? 'Connected (Tap to disconnect)'
-                                  : 'Disconnected (Tap to connect)',
+                              isConnected ? '已链接 (点击断开链接)' : '未链接 (点击链接)',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -279,9 +389,11 @@ class _HomePageState extends ConsumerState<HomePage>
             ),
           ),
 
-          // 右侧会员按钮
+          // 右侧会员按钮 - 根据会员类型显示不同图标
           _buildIconButton(
-            icon: NewAppAssets.homeMemberIcon,
+            icon: _planId == 2
+                ? NewAppAssets.shareholderMemberBadge
+                : NewAppAssets.homeMemberIcon,
             size: 36,
             onTap: () {
               // 打开会员页面
@@ -314,6 +426,34 @@ class _HomePageState extends ConsumerState<HomePage>
 
   // 连接VPN
   Future<void> _connectVPN(BuildContext context) async {
+    // 检查会员是否过期
+    if (_isSubscriptionExpired) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('会员已过期'),
+          content: const Text('您的会员已过期，无法使用VPN服务。请续费后再试。'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                MemberRoutes.openMembershipPage(context);
+              },
+              child: const Text('立即续费'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('取消'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     // 防止重复连接
     final connectionData = ref.read(provider.connectionProvider);
     if (connectionData.status != provider.ConnectionStatus.disconnected) {
@@ -491,6 +631,9 @@ class _HomePageState extends ConsumerState<HomePage>
           await connectionRepo.disconnect().run();
           debugPrint('已通过Repository断开连接');
         }
+        // final connectionNotifier =
+        // ref.read(connectionNotifierProvider.notifier);
+        // await connectionNotifier.toggleConnection();
       } catch (e) {
         debugPrint('Repository断开失败: $e');
 
@@ -499,6 +642,7 @@ class _HomePageState extends ConsumerState<HomePage>
           final connectionNotifier =
               ref.read(connectionNotifierProvider.notifier);
           await connectionNotifier.abortConnection();
+          // await connectionNotifier.toggleConnection();
           debugPrint('已通过abortConnection断开连接');
         } catch (e2) {
           debugPrint('所有断开方法均失败: $e2');
@@ -506,6 +650,18 @@ class _HomePageState extends ConsumerState<HomePage>
       }
     } catch (e) {
       debugPrint('断开操作失败: $e');
+    }
+  }
+
+  /// 检查应用更新
+  Future<void> _checkForUpdates() async {
+    try {
+      final result = await _updateService.checkForUpdate();
+      if (result.hasUpdate && mounted) {
+        _updateService.showUpdateDialog(context, result);
+      }
+    } catch (e) {
+      debugPrint('检查更新失败: $e');
     }
   }
 }

@@ -15,6 +15,8 @@ class UserInfo {
   final String? telegramId; // 允许为 null
   final String uuid;
   final String avatarUrl;
+  final String? bscAddress; // BSC钱包地址
+  final bool isTemp; // 是否为临时账号，true表示临时账号，false表示非临时账号
 
   UserInfo({
     required this.email,
@@ -33,6 +35,8 @@ class UserInfo {
     this.telegramId,
     required this.uuid,
     required this.avatarUrl,
+    this.bscAddress,
+    required this.isTemp,
   });
 
   // 从 JSON 创建 UserInfo 实例
@@ -78,6 +82,12 @@ class UserInfo {
       // uuid 和 avatarUrl，如果为 null 返回空字符串
       uuid: json['uuid'] as String? ?? '',
       avatarUrl: json['avatar_url'] as String? ?? '',
+
+      // BSC钱包地址, 允许为 null
+      bscAddress: json['bsc_address'] as String?,
+
+      // 是否为临时账号，直接使用布尔值
+      isTemp: json['is_temp'] as bool? ?? false,
     );
   }
 }

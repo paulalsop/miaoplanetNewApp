@@ -17,7 +17,7 @@ class NewApp extends ConsumerWidget {
     // 获取当前主题
     final themeMode = ref.watch(themeProviderNotifier);
     final theme = ref.watch(themeProvider);
-    
+
     // 确保环境提供者已被覆盖
     try {
       final env = ref.read(environmentProvider);

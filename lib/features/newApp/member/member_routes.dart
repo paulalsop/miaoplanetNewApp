@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/membership_page.dart';
-import 'models/membership_model.dart';
+import 'models/membership_type.dart';
 
 /// 会员页面路由类
 class MemberRoutes {

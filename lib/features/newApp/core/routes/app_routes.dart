@@ -5,6 +5,9 @@ import '../../auth/screens/login_page.dart';
 import '../../auth/screens/register_page.dart';
 import '../../auth/screens/account_upgrade_page.dart';
 import '../../invitation/screens/invitation_page.dart';
+import '../../order/screens/order_list_page.dart';
+import '../../user/screens/user_agreement_page.dart';
+import '../../user/screens/bsc_address_page.dart';
 
 /// 新版应用的路由定义
 class NewAppRoutes {
@@ -12,7 +15,8 @@ class NewAppRoutes {
   NewAppRoutes._();
 
   /// 全局导航键，用于在任何地方进行导航
-  static final GlobalKey<NavigatorState> globalNavigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> globalNavigatorKey =
+      GlobalKey<NavigatorState>();
 
   // 定义路由路径
   static const String startup = '/newApp/startup';
@@ -26,6 +30,9 @@ class NewAppRoutes {
   static const String nodeDetails = '/newApp/node/details';
   static const String invitationCode = '/newApp/invitation/code';
   static const String upgradeAccount = '/newApp/auth/upgrade';
+  static const String orderList = '/order/list';
+  static const String userAgreement = '/user/agreement';
+  static const String bscAddress = '/user/bsc_address';
 
   /// 注册所有路由
   static Map<String, WidgetBuilder> routes = {
@@ -35,11 +42,15 @@ class NewAppRoutes {
     register: (context) => const RegisterPage(),
     invitationCode: (context) => const InvitationPage(),
     upgradeAccount: (context) => const AccountUpgradePage(),
+    orderList: (context) => const OrderListPage(),
+    userAgreement: (context) => const UserAgreementPage(),
+    bscAddress: (context) => const BscAddressPage(),
     // 其他路由将在实现相应页面后添加
   };
 
   /// 路由配置
-  static RouteSettings settings(String name, {Map<String, dynamic>? arguments}) {
+  static RouteSettings settings(String name,
+      {Map<String, dynamic>? arguments}) {
     return RouteSettings(name: name, arguments: arguments);
   }
 
@@ -69,7 +80,8 @@ class NewAppRoutes {
         const end = 1.0;
         const curve = Curves.easeInOut;
 
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
         var opacityAnimation = animation.drive(tween);
 
         return FadeTransition(opacity: opacityAnimation, child: child);
@@ -92,7 +104,8 @@ class NewAppRoutes {
         const end = Offset.zero;
         const curve = Curves.easeInOut;
 
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        var tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
         var offsetAnimation = animation.drive(tween);
 
         return SlideTransition(position: offsetAnimation, child: child);
@@ -103,7 +116,8 @@ class NewAppRoutes {
   }
 
   /// 导航到指定页面
-  static Future<T?> navigateTo<T>(BuildContext context, String routeName, {Map<String, dynamic>? arguments}) {
+  static Future<T?> navigateTo<T>(BuildContext context, String routeName,
+      {Map<String, dynamic>? arguments}) {
     return Navigator.pushNamed(
       context,
       routeName,
@@ -112,7 +126,8 @@ class NewAppRoutes {
   }
 
   /// 替换当前页面
-  static Future<T?> navigateReplace<T>(BuildContext context, String routeName, {Map<String, dynamic>? arguments}) {
+  static Future<T?> navigateReplace<T>(BuildContext context, String routeName,
+      {Map<String, dynamic>? arguments}) {
     return Navigator.pushReplacementNamed(
       context,
       routeName,
@@ -121,7 +136,9 @@ class NewAppRoutes {
   }
 
   /// 清除所有页面并导航到指定页面
-  static Future<T?> navigateAndRemoveUntil<T>(BuildContext context, String routeName, {Map<String, dynamic>? arguments}) {
+  static Future<T?> navigateAndRemoveUntil<T>(
+      BuildContext context, String routeName,
+      {Map<String, dynamic>? arguments}) {
     return Navigator.pushNamedAndRemoveUntil(
       context,
       routeName,

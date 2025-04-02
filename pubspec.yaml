@@ -1,7 +1,7 @@
 name: hiddify
 description: Cross Platform Multi Protocol Proxy Frontend.
 publish_to: "none"
-version: 2.5.7+20507
+version: 2.5.10+20510
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -46,7 +46,7 @@ dependencies:
   window_manager: ^0.3.8
   tray_manager: ^0.2.1
   package_info_plus: ^5.0.1
-  url_launcher: ^6.2.5
+  url_launcher: ^6.3.1
   vclibs: ^0.1.2
   launch_at_startup: ^0.2.2
   sentry_flutter: ^8.13.2
@@ -170,6 +170,8 @@ flutter:
     - assets/images/newPageMaterials/menu/ic_side_user.png
     - assets/images/newPageMaterials/menu/line_side_line.png
     - assets/images/newPageMaterials/menu/pic_menu_avatar.png
+    - assets/images/newPageMaterials/menu/ic_side_Recommend.png
+    - assets/images/newPageMaterials/menu/ic_side_BSC.png
     # 添加服务器界面相关的图片资源
     - assets/images/newPageMaterials/server/bg_Server_bg.png
     - assets/images/newPageMaterials/server/card_server_banner.png
@@ -217,6 +219,12 @@ flutter:
     - assets/images/newPageMaterials/copyInvitationCode/ic_card_copy.png
     - assets/images/newPageMaterials/copyInvitationCode/ic_card_quit.png
     - assets/images/newPageMaterials/copyInvitationCode/line_card_line.png
+    - assets/images/newPageMaterials/menu/
+    - assets/images/newPageMaterials/order/
+    - assets/images/newPageMaterials/order/orderlist/
+    - assets/images/newPageMaterials/order/paydialog/
+    - assets/images/newPageMaterials/order/paysuccess/
+    - assets/images/newPageMaterials/order/paycancel/
 
   fonts:
     - family: Shabnam
